@@ -105,6 +105,35 @@ bool RayBounds(Bounds3 bounds, float3 ray_origin, float3 ray_inv_dir, float t_mi
     
 }
 
+bool compare(Hit a, Hit b) {
+    if (a.primitive_id != b.primitive_id) {
+        return a.primitive_id < b.primitive_id;
+    }
+    return a.t < b.t;
+}
+
+void quickSort(Hit* a, int l, int r) {
+    if (l < r) {
+        int i = l, j = r;
+        Hit x = a[l];
+        while (i < j) {
+            while (i < j && !compare(a[j], x)) j--;
+            if (i < j) a[i++] = a[j];
+            while (i < j && compare(a[i], x)) i++;
+            if (i < j) a[j--] = a[i];
+        }
+        a[i] = x;
+        quickSort(a, l, i - 1);
+        quickSort(a, i + 1, r);
+    }
+}
+
+void sort(__global HitRecord* record) {
+    int n = record->num;
+    Hit* a = record->hits;
+    quickSort(a, 0, n);
+}
+
 __kernel void TraceBvh
 (
     // Input
@@ -197,6 +226,8 @@ __kernel void TraceBvh
         }
     }
 
+    sort(&records[ray_idx]);
+
 endtrace:
     // Write the result to the output buffer
 #ifdef SHADOW_RAYS
@@ -204,4 +235,6 @@ endtrace:
 // #else
     // hits[ray_idx] = hit;
 #endif
+
+
 }
