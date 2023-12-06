@@ -1,0 +1,10 @@
+*.o
+*.opensdf
+*.pdb
+*.tlog
+*.suo
+*.sdf
+*.obj
+*.mtl
+imgui.ini
+build/
