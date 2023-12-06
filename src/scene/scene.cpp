@@ -185,234 +185,52 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         // The mesh is triangular
         assert(indices.size() % 3 == 0);
 
-        std::map<std::pair<float3, float3>, std::pair<int, int>> umap;
+        for (std::uint32_t face = 0; face < indices.size() / 3; ++face) {
 
-        auto handle_edge = [&](Vertex v1, Vertex v2, std::uint32_t face) {
-            float3 pos1 = v1.position, pos2 = v2.position;
-            if (pos1 > pos2) {
-                std::swap(pos1, pos2);
-            }
-            if (!umap.count({ pos1, pos2 })) {
-                umap[{pos1, pos2}] = { face, -1 };
-            }
-            else if (umap[{pos1, pos2}].second == -1) {
-                umap[{pos1, pos2}].second = face;
-            }
-            else throw std::bad_exception();
+            int pos_idx[] = {
+                indices[face * 3 + 0].vertex_index, 
+                indices[face * 3 + 1].vertex_index, 
+                indices[face * 3 + 2].vertex_index, 
             };
 
-        for (std::uint32_t face = 0; face < indices.size() / 3; ++face) {
-            auto pos_idx_1 = indices[face * 3 + 0].vertex_index;
-            auto pos_idx_2 = indices[face * 3 + 1].vertex_index;
-            auto pos_idx_3 = indices[face * 3 + 2].vertex_index;
+            int normal_idx[] = {
+                indices[face * 3 + 0].normal_index,
+                indices[face * 3 + 1].normal_index,
+                indices[face * 3 + 2].normal_index,
+            };
 
-            auto normal_idx_1 = indices[face * 3 + 0].normal_index;
-            auto normal_idx_2 = indices[face * 3 + 1].normal_index;
-            auto normal_idx_3 = indices[face * 3 + 2].normal_index;
+            int texcoord_idx[] = {
+                indices[face * 3 + 0].texcoord_index,
+                indices[face * 3 + 1].texcoord_index,
+                indices[face * 3 + 2].texcoord_index,
+            };
 
-            auto texcoord_idx_1 = indices[face * 3 + 0].texcoord_index;
-            auto texcoord_idx_2 = indices[face * 3 + 1].texcoord_index;
-            auto texcoord_idx_3 = indices[face * 3 + 2].texcoord_index;
+            Vertex v[3];
+            for (int i = 0; i < 3; ++i) {
+                v[i].position.x = attrib.vertices[pos_idx[i] * 3 + 0] * scale;
+                v[i].position.y = attrib.vertices[pos_idx[i] * 3 + 1] * scale;
+                v[i].position.z = attrib.vertices[pos_idx[i] * 3 + 2] * scale;
 
-            Vertex v1;
-            v1.position.x = attrib.vertices[pos_idx_1 * 3 + 0] * scale;
-            v1.position.y = attrib.vertices[pos_idx_1 * 3 + 1] * scale;
-            v1.position.z = attrib.vertices[pos_idx_1 * 3 + 2] * scale;
+                v[i].normal.x = attrib.normals[normal_idx[i] * 3 + 0];
+                v[i].normal.y = attrib.normals[normal_idx[i] * 3 + 1];
+                v[i].normal.z = attrib.normals[normal_idx[i] * 3 + 2];
 
-            v1.normal.x = attrib.normals[normal_idx_1 * 3 + 0];
-            v1.normal.y = attrib.normals[normal_idx_1 * 3 + 1];
-            v1.normal.z = attrib.normals[normal_idx_1 * 3 + 2];
+                v[i].texcoord.x = texcoord_idx[i] < 0 ? 0.0f : attrib.texcoords[texcoord_idx[i] * 2 + 0];
+                v[i].texcoord.y = texcoord_idx[i] < 0 ? 0.0f : attrib.texcoords[texcoord_idx[i] * 2 + 1];
 
-            v1.texcoord.x = texcoord_idx_1 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_1 * 2 + 0];
-            v1.texcoord.y = texcoord_idx_1 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_1 * 2 + 1];
-
-            Vertex v2;
-            v2.position.x = attrib.vertices[pos_idx_2 * 3 + 0] * scale;
-            v2.position.y = attrib.vertices[pos_idx_2 * 3 + 1] * scale;
-            v2.position.z = attrib.vertices[pos_idx_2 * 3 + 2] * scale;
-
-            v2.normal.x = attrib.normals[normal_idx_2 * 3 + 0];
-            v2.normal.y = attrib.normals[normal_idx_2 * 3 + 1];
-            v2.normal.z = attrib.normals[normal_idx_2 * 3 + 2];
-
-            v2.texcoord.x = texcoord_idx_2 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_2 * 2 + 0];
-            v2.texcoord.y = texcoord_idx_2 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_2 * 2 + 1];
-
-            Vertex v3;
-            v3.position.x = attrib.vertices[pos_idx_3 * 3 + 0] * scale;
-            v3.position.y = attrib.vertices[pos_idx_3 * 3 + 1] * scale;
-            v3.position.z = attrib.vertices[pos_idx_3 * 3 + 2] * scale;
-
-            v3.normal.x = attrib.normals[normal_idx_3 * 3 + 0];
-            v3.normal.y = attrib.normals[normal_idx_3 * 3 + 1];
-            v3.normal.z = attrib.normals[normal_idx_3 * 3 + 2];
-
-            v3.texcoord.x = texcoord_idx_3 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_3 * 2 + 0];
-            v3.texcoord.y = texcoord_idx_3 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_3 * 2 + 1];
-
-            flip_vector(v1.position, flip_yz);
-            flip_vector(v1.normal, flip_yz);
-            flip_vector(v2.position, flip_yz);
-            flip_vector(v2.normal, flip_yz);
-            flip_vector(v3.position, flip_yz);
-            flip_vector(v3.normal, flip_yz);
+                flip_vector(v[i].position, flip_yz);
+                flip_vector(v[i].normal, flip_yz);
+            }
 
             if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
-                triangles_.emplace_back(v1, v2, v3, shape.mesh.material_ids[face], 0 + 4 * (triangles_.size()));
+                triangles_.emplace_back(v[0], v[1], v[2], shape.mesh.material_ids[face], 0 + 4 * (triangles_.size()));
             }
             else {
                 // Use the default material
-                triangles_.emplace_back(v1, v2, v3, 0, 0 + 4 * (triangles_.size()));
-            }
-
-            handle_edge(v1, v2, face);
-            handle_edge(v1, v3, face);
-            handle_edge(v3, v2, face);
-        }
-
-        for (std::uint32_t face = 0; face < indices.size() / 3; ++face) {
-            auto pos_idx_1 = indices[face * 3 + 0].vertex_index;
-            auto pos_idx_2 = indices[face * 3 + 1].vertex_index;
-            auto pos_idx_3 = indices[face * 3 + 2].vertex_index;
-
-            auto normal_idx_1 = indices[face * 3 + 0].normal_index;
-            auto normal_idx_2 = indices[face * 3 + 1].normal_index;
-            auto normal_idx_3 = indices[face * 3 + 2].normal_index;
-
-            auto texcoord_idx_1 = indices[face * 3 + 0].texcoord_index;
-            auto texcoord_idx_2 = indices[face * 3 + 1].texcoord_index;
-            auto texcoord_idx_3 = indices[face * 3 + 2].texcoord_index;
-
-            Vertex v1;
-            v1.position.x = attrib.vertices[pos_idx_1 * 3 + 0] * scale + movement;
-            v1.position.y = attrib.vertices[pos_idx_1 * 3 + 1] * scale + movement;
-            v1.position.z = attrib.vertices[pos_idx_1 * 3 + 2] * scale + movement;
-
-            v1.normal.x = attrib.normals[normal_idx_1 * 3 + 0];
-            v1.normal.y = attrib.normals[normal_idx_1 * 3 + 1];
-            v1.normal.z = attrib.normals[normal_idx_1 * 3 + 2];
-
-            v1.texcoord.x = texcoord_idx_1 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_1 * 2 + 0];
-            v1.texcoord.y = texcoord_idx_1 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_1 * 2 + 1];
-
-            Vertex v2;
-            v2.position.x = attrib.vertices[pos_idx_2 * 3 + 0] * scale + movement;
-            v2.position.y = attrib.vertices[pos_idx_2 * 3 + 1] * scale + movement;
-            v2.position.z = attrib.vertices[pos_idx_2 * 3 + 2] * scale + movement;
-
-            v2.normal.x = attrib.normals[normal_idx_2 * 3 + 0];
-            v2.normal.y = attrib.normals[normal_idx_2 * 3 + 1];
-            v2.normal.z = attrib.normals[normal_idx_2 * 3 + 2];
-
-            v2.texcoord.x = texcoord_idx_2 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_2 * 2 + 0];
-            v2.texcoord.y = texcoord_idx_2 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_2 * 2 + 1];
-
-            Vertex v3;
-            v3.position.x = attrib.vertices[pos_idx_3 * 3 + 0] * scale + movement;
-            v3.position.y = attrib.vertices[pos_idx_3 * 3 + 1] * scale + movement;
-            v3.position.z = attrib.vertices[pos_idx_3 * 3 + 2] * scale + movement;
-
-            v3.normal.x = attrib.normals[normal_idx_3 * 3 + 0];
-            v3.normal.y = attrib.normals[normal_idx_3 * 3 + 1];
-            v3.normal.z = attrib.normals[normal_idx_3 * 3 + 2];
-
-            v3.texcoord.x = texcoord_idx_3 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_3 * 2 + 0];
-            v3.texcoord.y = texcoord_idx_3 < 0 ? 0.0f : attrib.texcoords[texcoord_idx_3 * 2 + 1];
-
-            flip_vector(v1.position, flip_yz);
-            flip_vector(v1.normal, flip_yz);
-            flip_vector(v2.position, flip_yz);
-            flip_vector(v2.normal, flip_yz);
-            flip_vector(v3.position, flip_yz);
-            flip_vector(v3.normal, flip_yz);
-
-            if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
-                triangles_.emplace_back(v1, v2, v3, shape.mesh.material_ids[face], 2 + 4 * (triangles_.size()));
-            }
-            else {
-                // Use the default material
-                triangles_.emplace_back(v1, v2, v3, 0, 2 + 4 * (triangles_.size()));
+                triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
             }
         }
 
-        for (auto& [i, j] : umap) {
-            auto& [src, dst] = i;
-            if (j.second != -1) {
-                edges_.emplace_back(src, dst, j.first, j.second);
-            }
-            else {
-                edges_.emplace_back(src, dst, j.first);
-            }
-        }
-
-    }
-
-    auto cross = [&](const float3& a, const float3& b) {
-        return float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
-    };
-
-    for (const auto& edge : edges_) {
-
-        auto edgeDst = edge;
-        edgeDst.src += movement;
-        edgeDst.dest += movement;
-
-        Vertex v1;
-        v1.position.x = edge.src.x;
-        v1.position.y = edge.src.y;
-        v1.position.z = edge.src.z;
-
-        Vertex v2;
-        v2.position.x = edge.dest.x;
-        v2.position.y = edge.dest.y;
-        v2.position.z = edge.dest.z;
-
-        Vertex v3;
-        v3.position.x = edge.src.x + movement;
-        v3.position.y = edge.src.y + movement;
-        v3.position.z = edge.src.z + movement;
-
-        //auto cr = cross(v2.position - v1.position, v3.position - v2.position);
-        //v1.normal.x = v2.normal.x = v3.normal.x = cr.x;
-        //v1.normal.y = v2.normal.y = v3.normal.y = cr.y;
-        //v1.normal.z = v2.normal.z = v3.normal.z = cr.z;
-
-        flip_vector(v1.position, flip_yz);
-        flip_vector(v1.normal, flip_yz);
-        flip_vector(v2.position, flip_yz);
-        flip_vector(v2.normal, flip_yz);
-        flip_vector(v3.position, flip_yz);
-        flip_vector(v3.normal, flip_yz);
-        
-        Triangle triangle(v1, v2, v3, 0, 1);
-        triangle.InsertEdge(edge, edgeDst);
-        triangles_.emplace_back(triangle);
-
-        v1.position.x = edge.src.x + movement;
-        v1.position.y = edge.src.y + movement;
-        v1.position.z = edge.src.z + movement;
-        v2.position.x = edge.dest.x + movement;
-        v2.position.y = edge.dest.y + movement;
-        v2.position.z = edge.dest.z + movement;
-        v3.position.x = edge.dest.x;
-        v3.position.y = edge.dest.y;
-        v3.position.z = edge.dest.z;
-
-        //cr = cross(v2.position - v1.position, v3.position - v2.position);
-        //v1.normal.x = v2.normal.x = v3.normal.x = cr.x;
-        //v1.normal.y = v2.normal.y = v3.normal.y = cr.y;
-        //v1.normal.z = v2.normal.z = v3.normal.z = cr.z;
-
-        flip_vector(v1.position, flip_yz);
-        flip_vector(v1.normal, flip_yz);
-        flip_vector(v2.position, flip_yz);
-        flip_vector(v2.normal, flip_yz);
-        flip_vector(v3.position, flip_yz);
-        flip_vector(v3.normal, flip_yz);
-
-        triangle = Triangle(v1, v2, v3, 0, 3);
-        triangle.InsertEdge(edge, edgeDst);
-        triangles_.emplace_back(triangle);
     }
 
     std::cout << "Load successful (" << triangles_.size() << " triangles)" << std::endl;

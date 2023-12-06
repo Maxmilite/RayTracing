@@ -344,41 +344,41 @@ __kernel void HitSurface
             
 
             // Indirect lighting
-            //{
-            //    // Sample bxdf
-            //    float2 s;
-            //    s.x = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_U, BLUE_NOISE_BUFFERS);
-            //    s.y = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_V, BLUE_NOISE_BUFFERS);
-            //    float s1 = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_LAYER, BLUE_NOISE_BUFFERS);
+            {
+                // Sample bxdf
+                float2 s;
+                s.x = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_U, BLUE_NOISE_BUFFERS);
+                s.y = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_V, BLUE_NOISE_BUFFERS);
+                float s1 = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_LAYER, BLUE_NOISE_BUFFERS);
 
-            //    float pdf = 0.0f;
-            //    float3 throughput = 0.0f;
-            //    float3 outgoing;
-            //    float offset;
-            //    float3 bxdf = SampleBxdf(s1, s, material, normal, incoming, &outgoing, &pdf, &offset);
+                float pdf = 0.0f;
+                float3 throughput = 0.0f;
+                float3 outgoing;
+                float offset;
+                float3 bxdf = SampleBxdf(s1, s, material, normal, incoming, &outgoing, &pdf, &offset);
 
-            //    if (pdf > 0.0) {
-            //        throughput = bxdf / pdf;
-            //    }
+                if (pdf > 0.0) {
+                    throughput = bxdf / pdf;
+                }
 
-            //    throughputs[pixel_idx] *= throughput;
+                throughputs[pixel_idx] *= throughput;
 
-            //    bool spawn_outgoing_ray = (pdf > 0.0);
+                bool spawn_outgoing_ray = (pdf > 0.0);
 
-            //    if (spawn_outgoing_ray) {
-            //        ///@TODO: use LDS
-            //        
+                if (spawn_outgoing_ray) {
+                    ///@TODO: use LDS
+                    
 
-            //        Ray outgoing_ray;
-            //        outgoing_ray.origin.xyz = position + geometry_normal * EPS * offset;
-            //        outgoing_ray.origin.w = 0.0f;
-            //        outgoing_ray.direction.xyz = outgoing;
-            //        outgoing_ray.direction.w = MAX_RENDER_DIST;
+                    Ray outgoing_ray;
+                    outgoing_ray.origin.xyz = position + geometry_normal * EPS * offset;
+                    outgoing_ray.origin.w = 0.0f;
+                    outgoing_ray.direction.xyz = outgoing;
+                    outgoing_ray.direction.w = MAX_RENDER_DIST;
 
-            //        // outgoing_rays[outgoing_ray_idx] = outgoing_ray;
-            //        outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
-            //    }
-            //}
+                    // outgoing_rays[outgoing_ray_idx] = outgoing_ray;
+                    outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
+                }
+            }
         }
 
     }

@@ -34,9 +34,9 @@ bool RayTriangle(Ray ray, const __global RTTriangle* triangle, float2* bc, float
     float det = dot(e1, pvec);
 
     // Ray is parallel to plane
-    /*if (det < 1e-8f || -det > 1e-8f) {
+    if (det < 1e-8f || -det > 1e-8f) {
         return false;
-    }*/
+    }
 
     float inv_det = 1.0f / det;
     float3 tvec = ray.origin.xyz - triangle->position1;
@@ -116,7 +116,7 @@ __kernel void TraceBvh
 #ifdef SHADOW_RAYS
     __global uint* shadow_hits,
 #else
-    __global Hit* hits,
+    //__global Hit* hits,
 #endif
     __global HitRecord* records
 ) {
@@ -127,7 +127,6 @@ __kernel void TraceBvh
     if (ray_idx >= num_rays) {
         return;
     }
-
 
     Ray ray = rays[ray_idx];
     // TODO: fix it
@@ -141,9 +140,6 @@ __kernel void TraceBvh
     uint shadow_hit = INVALID_ID;
 #endif
 
-    Hit hit;
-    hit.primitive_id = INVALID_ID;
-
     float t;
     // Follow ray through BVH nodes to find primitive intersections
     int toVisitOffset = 0;
@@ -153,32 +149,24 @@ __kernel void TraceBvh
     records[ray_idx].num = 0;
     while (true) {
         LinearBVHNode node = nodes[currentNodeIndex];
-
         if (RayBounds(node.bounds, ray.origin.xyz, ray_inv_dir, ray.origin.w, ray.direction.w)) {
             int num_primitives = node.num_primitives_axis >> 16;
             // Leaf node
             if (num_primitives > 0) {
                 // Intersect ray with primitives in leaf BVH node
                 for (int i = 0; i < num_primitives; ++i) {
-                    Hit prev_hit = hit;
+                    Hit hit;
                     if (RayTriangle(ray, &triangles[node.offset + i], &hit.bc, &hit.t)) {
                         hit.primitive_id = node.offset + i;
                         //    // Set ray t_max
                         //    // TODO: remove t from hit structure
                         ray.direction.w = hit.t;
-                        if ((triangles[node.offset + i].prismTri & 1) == 0) {
 #ifdef SHADOW_RAYS
                             shadow_hit = 0;
                             goto endtrace;
 #endif
-                        }
-                        if (hit.primitive_id != INVALID_ID /* && ((triangles[node.offset + i].prismTri & 1) == 1) */ ) {
-                            records[ray_idx].hits[records[ray_idx].num] = hit;
-                            records[ray_idx].num++;
-                        }
-                        if ((triangles[node.offset + i].prismTri & 1) == 1) {
-                            hit = prev_hit;
-                        }
+                        records[ray_idx].hits[records[ray_idx].num] = hit;
+                        records[ray_idx].num++;
                     }
                 }
 
@@ -213,7 +201,7 @@ endtrace:
     // Write the result to the output buffer
 #ifdef SHADOW_RAYS
     shadow_hits[ray_idx] = shadow_hit;
-#else
-    hits[ray_idx] = hit;
+// #else
+    // hits[ray_idx] = hit;
 #endif
 }
