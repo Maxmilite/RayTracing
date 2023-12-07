@@ -103,24 +103,22 @@ __kernel void HitSurface
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
 
-    /*if (record.num <= 0) {
+    if (record.num <= 0) {
         return;
-    }*/
+    }
 
     //record.num = max(record.num, 0u);
 
     int shadow_ray_idx = -1;
     int outgoing_ray_idx = -1;
+    Ray incoming_ray = incoming_rays[incoming_ray_idx];
+    float3 incoming = -incoming_ray.direction.xyz;
+    uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
+    uint sample_idx = sample_counter[0];
+    int x = pixel_idx % width;
+    int y = pixel_idx / width;
 
     if (hit.primitive_id != INVALID_ID) {
-        Ray incoming_ray = incoming_rays[incoming_ray_idx];
-        float3 incoming = -incoming_ray.direction.xyz;
-
-        uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-        uint sample_idx = sample_counter[0];
-
-        int x = pixel_idx % width;
-        int y = pixel_idx / width;
 
         Triangle triangle = triangles[hit.primitive_id];
 
@@ -209,15 +207,12 @@ __kernel void HitSurface
                 outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
             }
         }
-    }
+    } 
     
     bool flag = 0;
 
     if (shadow_ray_idx == -1) {
-        //return;
         if (record.num != 0) {
-            //flag = 1;
-            //return;
             uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
             shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
             shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
