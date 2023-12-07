@@ -53,9 +53,8 @@ float getU(HitRecord* record, const __global Triangle* triangles, uint index) {
 }
 
 float calcRadiance(HitRecord* record, const __global Triangle* triangles, uint index) {
-    float res = getU(record, triangles, index - 1) - getU(record, triangles, index);
-    if (res < 0) res = -res;
-    return res * 0.05f;
+    float res = getU(record, triangles, index + 1) - getU(record, triangles, index);
+    return res;
 }
 
 __kernel void HitSurface
@@ -207,7 +206,7 @@ __kernel void HitSurface
                 outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
             }
         }
-    } 
+    }  
     
     bool flag = 0;
 
@@ -230,13 +229,11 @@ __kernel void HitSurface
         }
     }
 
-    for (int i = 1; i < record.num; i += 2) {
+    for (int i = 0; i < record.num; i += 2) {
 
         Hit hit = record.hits[i];
         Triangle triangle = triangles[hit.primitive_id];
-        if ((triangle.prismTri & 1) == 0) {
-            continue;
-        }
+        float radiance_base = (record.hits[i + 1].t - record.hits[i].t) * 0.05;
 
         float u = 0, v = 0;
         float3 v0i = triangle.src.src;
