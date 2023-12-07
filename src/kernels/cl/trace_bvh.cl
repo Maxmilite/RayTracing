@@ -145,7 +145,7 @@ __kernel void TraceBvh
 #ifdef SHADOW_RAYS
     __global uint* shadow_hits,
 #else
-    //__global Hit* hits,
+    __global Hit* hits,
 #endif
     __global HitRecord* records
 ) {
@@ -232,9 +232,17 @@ endtrace:
     // Write the result to the output buffer
 #ifdef SHADOW_RAYS
     shadow_hits[ray_idx] = shadow_hit;
-// #else
-    // hits[ray_idx] = hit;
-#endif
+ #else
+    do {} while (0);
 
+    // TODO: Remove this
+
+    if (records[ray_idx].num) hits[ray_idx] = records[ray_idx].hits[0];
+    else {
+        Hit hit;
+        hit.primitive_id = INVALID_ID;
+        hits[ray_idx] = hit;
+    }
+#endif
 
 }

@@ -39,6 +39,7 @@
 #include <sstream>
 #include <ctime>
 #include <cctype>
+#include <functional>
 #include <unordered_map>
 
 #undef max
@@ -222,13 +223,29 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
                 flip_vector(v[i].normal, flip_yz);
             }
 
-            if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
-                triangles_.emplace_back(v[0], v[1], v[2], shape.mesh.material_ids[face], 0 + 4 * (triangles_.size()));
+
+            // Prism
+            const float3 vec(movement, movement, movement);
+            Vertex moved_v[3] = { v[0], v[1], v[2] };
+            for (int i = 0; i < 3; ++i) {
+                moved_v[i].position += vec;
             }
-            else {
-                // Use the default material
-                triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
-            }
+
+            triangles_.emplace_back(v[0], v[1], moved_v[1], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(moved_v[1], moved_v[0], v[0], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(v[0], v[2], moved_v[2], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(moved_v[2], moved_v[0], v[0], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(v[1], v[2], moved_v[2], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(moved_v[2], moved_v[1], v[1], 0, 0 + 4 * (triangles_.size()));
+
+
+            //if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
+            //    triangles_.emplace_back(v[0], v[1], v[2], shape.mesh.material_ids[face], 0 + 4 * (triangles_.size()));
+            //}
+            //else {
+            //    // Use the default material
+            //    triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
+            //}
         }
 
     }
