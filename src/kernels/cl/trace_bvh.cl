@@ -61,7 +61,7 @@ bool RayTriangle(Ray ray, const __global RTTriangle* triangle, float2* bc, float
         return false;
     }
 
-    // if ((triangle->prismTri & 1) == 1) return false;
+     //if ((triangle->prismTri & 1) == 1) return false;
 
     // Intersection is found
     *bc = (float2)(u, v);
@@ -187,6 +187,7 @@ __kernel void TraceBvh
                     Hit hit;
                     if (RayTriangle(ray, &triangles[node.offset + i], &hit.bc, &hit.t)) {
                         hit.primitive_id = node.offset + i;
+                        //hit.primitive_id = triangles[node.offset + i].prismTri >> 2;
                         //    // Set ray t_max
                         //    // TODO: remove t from hit structure
                         ray.direction.w = hit.t;

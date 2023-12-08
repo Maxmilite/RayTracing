@@ -231,12 +231,15 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
                 moved_v[i].position += vec;
             }
 
-            triangles_.emplace_back(v[0], v[1], moved_v[1], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(moved_v[1], moved_v[0], v[0], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(v[0], v[2], moved_v[2], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(moved_v[2], moved_v[0], v[0], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(v[1], v[2], moved_v[2], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(moved_v[2], moved_v[1], v[1], 0, 0 + 4 * (triangles_.size()));
+            int pos = triangles_.size();
+            triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
+            triangles_.emplace_back(moved_v[0], moved_v[1], moved_v[2], 0, 2 + 4 * pos);
+            triangles_.emplace_back(v[0], v[1], moved_v[1], 0, 1 + 4 * pos);
+            triangles_.emplace_back(moved_v[1], moved_v[0], v[0], 0, 3 + 4 * pos);
+            triangles_.emplace_back(v[0], v[2], moved_v[2], 0, 1 + 4 * pos);
+            triangles_.emplace_back(moved_v[2], moved_v[0], v[0], 0, 3 + 4 * pos);
+            triangles_.emplace_back(v[1], v[2], moved_v[2], 0, 1 + 4 * pos);
+            triangles_.emplace_back(moved_v[2], moved_v[1], v[1], 0, 3 + 4 * pos);
 
 
             //if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
@@ -244,7 +247,6 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
             //}
             //else {
             //    // Use the default material
-            //    triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
             //}
         }
 

@@ -106,8 +106,6 @@ __kernel void HitSurface
         return;
     }
 
-    //record.num = max(record.num, 0u);
-
     int shadow_ray_idx = -1;
     int outgoing_ray_idx = -1;
     Ray incoming_ray = incoming_rays[incoming_ray_idx];
@@ -116,7 +114,7 @@ __kernel void HitSurface
     uint sample_idx = sample_counter[0];
     int x = pixel_idx % width;
     int y = pixel_idx / width;
-
+    
     if (hit.primitive_id != INVALID_ID) {
 
         Triangle triangle = triangles[hit.primitive_id];
@@ -206,9 +204,7 @@ __kernel void HitSurface
                 outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
             }
         }
-    }  
-    
-    bool flag = 0;
+    }
 
     if (shadow_ray_idx == -1) {
         if (record.num != 0) {
@@ -375,6 +371,7 @@ __kernel void HitSurface
 
     }
 
+    
     
 
 }
