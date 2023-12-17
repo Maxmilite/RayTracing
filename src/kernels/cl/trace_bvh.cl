@@ -25,6 +25,30 @@
 #include "src/kernels/common/shared_structures.h"
 #include "src/kernels/common/constants.h"
 
+float getU(Hit hit) {
+    Triangle triangle = triangles[hit.primitive_id];
+
+    float u = 0, v = 0;
+    float3 v0i = triangle.src.src;
+    float3 v0j = triangle.src.dest;
+    float3 v1i = triangle.dst.src;
+    float3 v1j = triangle.dst.dest;
+
+    float3 x = InterpolateAttributes(triangle.v1.position,
+        triangle.v2.position, triangle.v3.position, hit.bc);
+    float tan1 = length(cross(v0i - x, v0j - x)) / dot(v0i - x, v0j - x);
+    float tan2 = length(cross(v0j - x, v1j - x)) / dot(v0j - x, v1j - x);
+    float tan3 = length(cross(v1j - x, v1i - x)) / dot(v1j - x, v1i - x);
+    float tan4 = length(cross(v1i - x, v0j - x)) / dot(v1i - x, v0j - x);
+    float w0i = (tan1 + tan2) / length(v0i - x);
+    float w0j = (tan2 + tan3) / length(v0j - x);
+    float w1j = (tan3 + tan4) / length(v1j - x);
+    float w1i = (tan4 + tan1) / length(v1i - x);
+
+    u = (w1i + w1j) / (w0i + w0j + w1i + w1j);
+    return u;
+}
+
 bool RayTriangle(Ray ray, const __global RTTriangle* triangle, float2* bc, float* out_t) {
 
     float3 e1 = triangle->position2 - triangle->position1;
@@ -187,7 +211,7 @@ __kernel void TraceBvh
                     Hit hit;
                     if (RayTriangle(ray, &triangles[node.offset + i], &hit.bc, &hit.t)) {
                         hit.primitive_id = node.offset + i;
-                        //hit.primitive_id = triangles[node.offset + i].prismTri >> 2;
+                        //hit.primitive_id = (triangles[node.offset + i].prismTri) / 4;
                         //    // Set ray t_max
                         //    // TODO: remove t from hit structure
                         ray.direction.w = hit.t;

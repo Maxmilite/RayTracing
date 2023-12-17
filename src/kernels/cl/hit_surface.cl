@@ -212,7 +212,7 @@ __kernel void HitSurface
             shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
             shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
 
-        } else return;
+        }
     }
 
     if (outgoing_ray_idx == -1) {
@@ -253,12 +253,12 @@ __kernel void HitSurface
 
         float3 p = (1.0f - u) * ((1.0f - v) * v0i + v * v0j) + u * ((1.0f - v) * v1i + v * v1j);
 
-        triangle = triangles[triangle.src.tri1];
+        triangle = triangles[triangle.prismTri >> 2];
         
-        float radiance = calcRadiance(&record, triangles, i);
+        float radiance = calcRadiance(&record, triangles, i) * radiance_base;
 
         //// Rendering
-        {
+        /*{
             Ray incoming_ray = incoming_rays[incoming_ray_idx];
             float3 incoming = -incoming_ray.direction.xyz;
 
@@ -268,8 +268,8 @@ __kernel void HitSurface
             int x = pixel_idx % width;
             int y = pixel_idx / width;
 
-            /*float3 position = InterpolateAttributes(triangle.v1.position,
-                triangle.v2.position, triangle.v3.position, (0.5, 0.5));*/
+            float3 position = InterpolateAttributes(triangle.v1.position,
+                triangle.v2.position, triangle.v3.position, (0.5, 0.5));
 
             float3 position = p;
 
@@ -367,10 +367,9 @@ __kernel void HitSurface
                     outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
                 }
             }
-        }
+        }*/
 
-    }
-
+    } 
     
     
 
