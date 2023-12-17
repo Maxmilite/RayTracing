@@ -181,6 +181,22 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
 
     const float movement = 1;
 
+    std::map<std::pair<float3, float3>, std::pair<int, int>> umap;
+
+    auto handle_edge = [&](Vertex v1, Vertex v2, std::uint32_t face) {
+        float3 pos1 = v1.position, pos2 = v2.position;
+        if (pos1 > pos2) {
+            std::swap(pos1, pos2);
+        }
+        if (!umap.count({ pos1, pos2 })) {
+            umap[{pos1, pos2}] = { face, -1 };
+        }
+        else if (umap[{pos1, pos2}].second == -1) {
+            umap[{pos1, pos2}].second = face;
+        }
+        else throw std::runtime_error("Error occurred while handling edge.");
+    };
+
     for (auto const& shape : shapes) {
         auto const& indices = shape.mesh.indices;
         // The mesh is triangular
@@ -231,33 +247,85 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
                 moved_v[i].position += vec;
             }
 
-            int pos = triangles_.size();
-            triangles_.emplace_back(v[0], v[1], v[2], 0, 0 + 4 * (triangles_.size()));
-            triangles_.emplace_back(moved_v[0], moved_v[1], moved_v[2], 0, 2 + 4 * pos);
+            triangles_.emplace_back(v[0], v[1], v[2], 0, 0);
+            triangles_.emplace_back(moved_v[0], moved_v[1], moved_v[2], 0, 2);
 
-            triangles_.emplace_back(v[0], v[1], moved_v[1], 0, 1 + 4 * pos);
-            triangles_.back().src = Edge();
-            triangles_.emplace_back(moved_v[1], moved_v[0], v[0], 0, 3 + 4 * pos);
-
-            triangles_.emplace_back(v[0], v[2], moved_v[2], 0, 1 + 4 * pos);
-
-            triangles_.emplace_back(moved_v[2], moved_v[0], v[0], 0, 3 + 4 * pos);
-
-            triangles_.emplace_back(v[1], v[2], moved_v[2], 0, 1 + 4 * pos);
-
-            triangles_.emplace_back(moved_v[2], moved_v[1], v[1], 0, 3 + 4 * pos);
-
-
-
-            //if (shape.mesh.material_ids[face] >= 0 && shape.mesh.material_ids[face] < materials_.size()) {
-            //    triangles_.emplace_back(v[0], v[1], v[2], shape.mesh.material_ids[face], 0 + 4 * (triangles_.size()));
-            //}
-            //else {
-            //    // Use the default material
-            //}
+            handle_edge(v[0], v[1], triangles_.size() - 2);
+            handle_edge(v[1], v[2], triangles_.size() - 2);
+            handle_edge(v[2], v[0], triangles_.size() - 2);
         }
 
     }
+
+    for (auto& [i, j] : umap) {
+        auto& [src, dst] = i;
+        if (j.second != -1) {
+            edges_.emplace_back(src, dst, j.first, j.second);
+        }
+        else {
+            edges_.emplace_back(src, dst, j.first);
+        }
+    }
+
+    for (const auto& edge : edges_) {
+
+        auto edgeDst = edge;
+        edgeDst.src += movement;
+        edgeDst.dest += movement;
+
+        Vertex v1;
+        v1.position.x = edge.src.x;
+        v1.position.y = edge.src.y;
+        v1.position.z = edge.src.z;
+
+        Vertex v2;
+        v2.position.x = edge.dest.x;
+        v2.position.y = edge.dest.y;
+        v2.position.z = edge.dest.z;
+
+        Vertex v3;
+        v3.position.x = edge.src.x + movement;
+        v3.position.y = edge.src.y + movement;
+        v3.position.z = edge.src.z + movement;
+
+        flip_vector(v1.position, flip_yz);
+        flip_vector(v1.normal, flip_yz);
+        flip_vector(v2.position, flip_yz);
+        flip_vector(v2.normal, flip_yz);
+        flip_vector(v3.position, flip_yz);
+        flip_vector(v3.normal, flip_yz);
+
+        Triangle triangle(v1, v2, v3, 0, 1);
+        triangle.InsertEdge(edge, edgeDst);
+        triangles_.emplace_back(triangle);
+
+        v1.position.x = edge.src.x + movement;
+        v1.position.y = edge.src.y + movement;
+        v1.position.z = edge.src.z + movement;
+        v2.position.x = edge.dest.x + movement;
+        v2.position.y = edge.dest.y + movement;
+        v2.position.z = edge.dest.z + movement;
+        v3.position.x = edge.dest.x;
+        v3.position.y = edge.dest.y;
+        v3.position.z = edge.dest.z;
+
+        //cr = cross(v2.position - v1.position, v3.position - v2.position);
+        //v1.normal.x = v2.normal.x = v3.normal.x = cr.x;
+        //v1.normal.y = v2.normal.y = v3.normal.y = cr.y;
+        //v1.normal.z = v2.normal.z = v3.normal.z = cr.z;
+
+        flip_vector(v1.position, flip_yz);
+        flip_vector(v1.normal, flip_yz);
+        flip_vector(v2.position, flip_yz);
+        flip_vector(v2.normal, flip_yz);
+        flip_vector(v3.position, flip_yz);
+        flip_vector(v3.normal, flip_yz);
+
+        triangle = Triangle(v1, v2, v3, 0, 3);
+        triangle.InsertEdge(edge, edgeDst);
+        triangles_.emplace_back(triangle);
+    }
+
 
     std::cout << "Load successful (" << triangles_.size() << " triangles)" << std::endl;
     std::cout << "Load successful (" << edges_.size() << " edges)" << std::endl;

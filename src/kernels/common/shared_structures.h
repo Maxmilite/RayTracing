@@ -144,6 +144,11 @@ STRUCT_BEGIN(Triangle)
         : v1(v1), v2(v2), v3(v3), mtlIndex(mtlIndex), prismTri(prismTri)
     {}
 
+    void InsertEdge(const Edge& var1, const Edge& var2) {
+        src = var1;
+        dst = var2;
+    }
+
     void Project(float3 axis, float& min, float& max) const
     {
         min = std::numeric_limits<float>::max();
