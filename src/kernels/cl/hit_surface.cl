@@ -59,7 +59,8 @@ bool compare(Hit a, Hit b) {
     if (a.primitive_id != b.primitive_id) {
         return a.primitive_id < b.primitive_id;
     }
-    return a.t < b.t;
+    //if (a.exact_id != a.primitive_id && b.exact_id == b.primitive_id) return 1;
+    return a.time < b.time;
 }
 
 void quickSort(Hit* a, int l, int r) {
