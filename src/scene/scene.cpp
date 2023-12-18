@@ -327,6 +327,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
     }
 
 
+
     std::cout << "Load successful (" << triangles_.size() << " triangles)" << std::endl;
     std::cout << "Load successful (" << edges_.size() << " edges)" << std::endl;
 
