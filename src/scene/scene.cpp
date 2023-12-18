@@ -257,6 +257,8 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
 
     }
 
+    std::cerr << "Edge size: " << umap.size() << std::endl;
+
     for (auto& [i, j] : umap) {
         auto& [src, dst] = i;
         if (j.second != -1) {

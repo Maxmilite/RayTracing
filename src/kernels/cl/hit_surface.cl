@@ -27,8 +27,7 @@
 #include "src/kernels/common/sampling.h"
 #include "src/kernels/common/light.h"
 
-float getU(HitRecord* record, const __global Triangle* triangles, uint index) {
-    Hit hit = record->hits[index];
+float getU(Hit hit, const __global Triangle* triangles) {
     Triangle triangle = triangles[hit.primitive_id];
 
     float u = 0, v = 0;
@@ -53,8 +52,7 @@ float getU(HitRecord* record, const __global Triangle* triangles, uint index) {
 }
 
 float calcRadiance(HitRecord* record, const __global Triangle* triangles, uint index) {
-    float res = getU(record, triangles, index + 1) - getU(record, triangles, index);
-    return res;
+    return 0.0F;
 }
 
 bool compare(Hit a, Hit b) {
@@ -127,6 +125,19 @@ __kernel void HitSurface
     if (incoming_ray_idx >= num_incoming_rays) {
         return;
     }
+
+    for (int i = 0; i < records_buffer[incoming_ray_idx].num; ++i) {
+        if (records_buffer[incoming_ray_idx].hits[i].primitive_id == records_buffer[incoming_ray_idx].hits[i].exact_id) {
+            Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
+            if (triangle.prismTri == 0) records_buffer[incoming_ray_idx].hits[i].time = 0;
+            else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
+        } else {
+            float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles);
+            records_buffer[incoming_ray_idx].hits[i].time = u;
+        }
+    }   
+
+    sort(&records_buffer[incoming_ray_idx])
 
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];

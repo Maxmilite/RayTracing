@@ -191,8 +191,25 @@ __kernel void TraceBvh
                             shadow_hit = 0;
                             goto endtrace;
 #endif
-                        records[ray_idx].hits[records[ray_idx].num] = hit;
-                        records[ray_idx].num++;
+                        RTTriangle triangle = triangles[node.offset + i];
+                        if ((triangle.prismTri & 1) == 0) {
+                            hit.exact_id = hit.primitive_id;
+                            records[ray_idx].hits[records[ray_idx].num] = hit;
+                            records[ray_idx].num++;
+                        }
+                        else if (triangle.src.triCount == 2) {
+                            hit.exact_id = triangle.src.tri1;
+                            records[ray_idx].hits[records[ray_idx].num] = hit;
+                            records[ray_idx].num++;
+                            hit.exact_id = triangle.src.tri2;
+                            records[ray_idx].hits[records[ray_idx].num] = hit;
+                            records[ray_idx].num++;
+                        }
+                        else {
+                            hit.exact_id = triangle.src.tri1;
+                            records[ray_idx].hits[records[ray_idx].num] = hit;
+                            records[ray_idx].num++;
+                        }
                     }
                 }
 
@@ -223,8 +240,6 @@ __kernel void TraceBvh
         }
     }
 
-    sort(&records[ray_idx]);
-
 endtrace:
     // Write the result to the output buffer
 #ifdef SHADOW_RAYS
@@ -234,7 +249,7 @@ endtrace:
 
     // TODO: Remove this
 
-    if (records[ray_idx].num >= 2) hits[ray_idx] = records[ray_idx].hits[0];
+    if (records[ray_idx].num) hits[ray_idx] = records[ray_idx].hits[0];
     else {
         Hit hit;
         hit.primitive_id = INVALID_ID;

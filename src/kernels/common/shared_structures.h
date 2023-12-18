@@ -65,6 +65,9 @@ STRUCT_BEGIN(Hit)
     unsigned int primitive_id;
     // TODO: remove t from hit structure
     float t;
+    unsigned int exact_id;
+    float time;
+    unsigned int padding[2];
 STRUCT_END(Hit)
 
 STRUCT_BEGIN(SceneInfo)
@@ -182,11 +185,17 @@ STRUCT_BEGIN(RTTriangle)
     RTTriangle(float3 v1, float3 v2, float3 v3, unsigned int prismTri = 0)
         : position1(v1), position2(v2), position3(v3), prismTri(prismTri)
     {}
+    void InsertEdge(const Edge& var1, const Edge& var2) {
+        src = var1;
+        dst = var2;
+    }
 #endif
+
 
     float3 position1;
     float3 position2;
     float3 position3;
+    Edge src, dst;
     unsigned int prismTri;
     unsigned int padding[3];
 STRUCT_END(RTTriangle)
