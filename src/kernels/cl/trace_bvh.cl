@@ -130,35 +130,6 @@ bool RayBounds(Bounds3 bounds, float3 ray_origin, float3 ray_inv_dir, float t_mi
     
 }
 
-bool compare(Hit a, Hit b) {
-    if (a.primitive_id != b.primitive_id) {
-        return a.primitive_id < b.primitive_id;
-    }
-    return a.t < b.t;
-}
-
-void quickSort(Hit* a, int l, int r) {
-    if (l < r) {
-        int i = l, j = r;
-        Hit x = a[l];
-        while (i < j) {
-            while (i < j && !compare(a[j], x)) j--;
-            if (i < j) a[i++] = a[j];
-            while (i < j && compare(a[i], x)) i++;
-            if (i < j) a[j--] = a[i];
-        }
-        a[i] = x;
-        quickSort(a, l, i - 1);
-        quickSort(a, i + 1, r);
-    }
-}
-
-void sort(__global HitRecord* record) {
-    int n = record->num;
-    Hit* a = record->hits;
-    quickSort(a, 0, n);
-}
-
 __kernel void TraceBvh
 (
     // Input
@@ -200,6 +171,7 @@ __kernel void TraceBvh
     int currentNodeIndex = 0;
     int nodesToVisit[64];
 
+
     records[ray_idx].num = 0;
     while (true) {
         LinearBVHNode node = nodes[currentNodeIndex];
@@ -212,9 +184,8 @@ __kernel void TraceBvh
                     Hit hit;
                     if (RayTriangle(ray, &triangles[node.offset + i], &hit.bc, &hit.t)) {
                         hit.primitive_id = node.offset + i;
-                        //hit.primitive_id = (triangles[node.offset + i].prismTri) / 4;
-                        //    // Set ray t_max
-                        //    // TODO: remove t from hit structure
+                        // Set ray t_max
+                        // TODO: remove t from hit structure
                         ray.direction.w = hit.t;
 #ifdef SHADOW_RAYS
                             shadow_hit = 0;
@@ -263,7 +234,7 @@ endtrace:
 
     // TODO: Remove this
 
-    if (records[ray_idx].num) hits[ray_idx] = records[ray_idx].hits[0];
+    if (records[ray_idx].num >= 2) hits[ray_idx] = records[ray_idx].hits[0];
     else {
         Hit hit;
         hit.primitive_id = INVALID_ID;

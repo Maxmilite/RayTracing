@@ -57,6 +57,35 @@ float calcRadiance(HitRecord* record, const __global Triangle* triangles, uint i
     return res;
 }
 
+bool compare(Hit a, Hit b) {
+    if (a.primitive_id != b.primitive_id) {
+        return a.primitive_id < b.primitive_id;
+    }
+    return a.t < b.t;
+}
+
+void quickSort(Hit* a, int l, int r) {
+    if (l < r) {
+        int i = l, j = r;
+        Hit x = a[l];
+        while (i < j) {
+            while (i < j && !compare(a[j], x)) j--;
+            if (i < j) a[i++] = a[j];
+            while (i < j && compare(a[i], x)) i++;
+            if (i < j) a[j--] = a[i];
+        }
+        a[i] = x;
+        quickSort(a, l, i - 1);
+        quickSort(a, i + 1, r);
+    }
+}
+
+void sort(__global HitRecord* record) {
+    int n = record->num;
+    Hit* a = record->hits;
+    quickSort(a, 0, n);
+}
+
 __kernel void HitSurface
 (
     // Input
