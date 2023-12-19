@@ -164,7 +164,7 @@ __kernel void HitSurface
         }
         else {
             float radiance = record.hits[i + 1].time - record.hits[i].time;
-            direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 1.0f, 1.0f);
+            direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 0.1f, 0.1f);
         }
     }*/
 
