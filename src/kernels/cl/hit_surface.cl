@@ -155,15 +155,17 @@ __kernel void HitSurface
 
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
+    direct_light_samples[shadow_ray_idx] += record.num * (1.0f, 1.0f, 1.0f);
     //
-    for (int i = 0; i + 1 < record.num; ++i) {
-        if (i > 30) break;
+    /*for (int i = 0; i + 1 < record.num; i += 2) {
+        if (i > 20) break;
         if (record.hits[i + 1].exact_id != record.hits[i].exact_id) {
+            
         }
         else {
             float radiance = record.hits[i + 1].time - record.hits[i].time;
             direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 1.0f, 1.0f);
         }
-    }
+    }*/
 
 }
