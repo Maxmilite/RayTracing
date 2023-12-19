@@ -58,10 +58,10 @@ bool RayTriangle(Ray ray, const __global RTTriangle* triangle, float2* bc, float
     float det = dot(e1, pvec);
 
     // Ray is parallel to plane
-    //if (det < 1e-8f || -det > 1e-8f) {
-    //    return false;
-    //}
-    if (fabs(det) < 1e-8f) return false;
+    if (det < 1e-8f && -det < 1e-8f) {
+        return false;
+    }
+    //if (fabs(det) < 1e-8f) return false;
 
     float inv_det = 1.0f / det;
     float3 tvec = ray.origin.xyz - triangle->position1;
