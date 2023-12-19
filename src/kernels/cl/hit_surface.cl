@@ -56,10 +56,12 @@ float calcRadiance(HitRecord* record, const __global Triangle* triangles, uint i
 }
 
 bool compare(Hit a, Hit b) {
-    if (a.primitive_id != b.primitive_id) {
-        return a.primitive_id < b.primitive_id;
+    if (a.exact_id != b.exact_id) {
+        return a.exact_id < b.exact_id;
     }
-    //if (a.exact_id != a.primitive_id && b.exact_id == b.primitive_id) return 1;
+
+    // TODO: Fix occlusion culling problem
+
     return a.time < b.time;
 }
 
@@ -138,7 +140,7 @@ __kernel void HitSurface
         }
     }   
 
-    sort(&records_buffer[incoming_ray_idx])
+    sort(&records_buffer[incoming_ray_idx]);
 
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
