@@ -41,7 +41,7 @@ void Integrator::Integrate() {
         ClearOutgoingRayCounter(bounce);
         ClearShadowRayCounter();
         ShadeSurfaceHits(bounce);
-        IntersectShadowRays();
+        //IntersectShadowRays();
         AccumulateDirectSamples();
     }
 

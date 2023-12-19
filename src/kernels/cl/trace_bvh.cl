@@ -138,11 +138,8 @@ __kernel void TraceBvh
     __global RTTriangle* triangles,
     __global LinearBVHNode* nodes,
     // Output
-#ifdef SHADOW_RAYS
     __global uint* shadow_hits,
-#else
     __global Hit* hits,
-#endif
     __global HitRecord* records
 ) {
     uint ray_idx = get_global_id(0);
@@ -161,9 +158,9 @@ __kernel void TraceBvh
     ray_sign[1] = ray_inv_dir.y < 0;
     ray_sign[2] = ray_inv_dir.z < 0;
 
-#ifdef SHADOW_RAYS
+//#ifdef SHADOW_RAYS
     uint shadow_hit = INVALID_ID;
-#endif
+//#endif
 
     float t;
     // Follow ray through BVH nodes to find primitive intersections
@@ -187,10 +184,10 @@ __kernel void TraceBvh
                         // Set ray t_max
                         // TODO: remove t from hit structure
                         ray.direction.w = hit.t;
-#ifdef SHADOW_RAYS
-                            shadow_hit = 0;
-                            goto endtrace;
-#endif
+//#ifdef SHADOW_RAYS
+                            shadow_hit = INVALID_ID;
+                            //goto endtrace;
+//#endif
                         RTTriangle triangle = triangles[node.offset + i];
                         if ((triangle.prismTri & 1) == 0) {
                             hit.exact_id = hit.primitive_id;
@@ -242,9 +239,9 @@ __kernel void TraceBvh
 
 endtrace:
     // Write the result to the output buffer
-#ifdef SHADOW_RAYS
+//#ifdef SHADOW_RAYS
     shadow_hits[ray_idx] = shadow_hit;
- #else
+ //#else
     do {} while (0);
 
     // TODO: Remove this
@@ -255,6 +252,5 @@ endtrace:
         hit.primitive_id = INVALID_ID;
         hits[ray_idx] = hit;
     }
-#endif
 
 }

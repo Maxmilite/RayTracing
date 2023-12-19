@@ -492,8 +492,9 @@ void CLPathTraceIntegrator::IntersectRays(std::uint32_t bounce) {
     kernel.SetArgument(1, ray_counter_buffer_[incoming_idx]);
     kernel.SetArgument(2, rt_triangle_buffer_);
     kernel.SetArgument(3, nodes_buffer_);
-    kernel.SetArgument(4, hits_buffer_);
-    kernel.SetArgument(5, records_buffer_);
+    kernel.SetArgument(4, shadow_hits_buffer_);
+    kernel.SetArgument(5, hits_buffer_);
+    kernel.SetArgument(6, records_buffer_);
 
     ///@TODO: use indirect dispatch
     cl_context_.ExecuteKernel(kernel, max_num_rays);
@@ -533,7 +534,8 @@ void CLPathTraceIntegrator::IntersectShadowRays() {
     kernel.SetArgument(2, rt_triangle_buffer_);
     kernel.SetArgument(3, nodes_buffer_);
     kernel.SetArgument(4, shadow_hits_buffer_);
-    kernel.SetArgument(5, records_buffer_);
+    kernel.SetArgument(5, hits_buffer_);
+    kernel.SetArgument(6, records_buffer_);
 
     ///@TODO: use indirect dispatch
     cl_context_.ExecuteKernel(kernel, max_num_rays);

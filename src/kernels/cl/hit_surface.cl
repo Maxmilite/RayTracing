@@ -84,7 +84,7 @@ void quickSort(Hit* a, int l, int r) {
 void sort(__global HitRecord* record) {
     int n = record->num;
     Hit* a = record->hits;
-    quickSort(a, 0, n);
+    quickSort(a, 0, n - 1);
 }
 
 __kernel void HitSurface
@@ -129,6 +129,10 @@ __kernel void HitSurface
         return;
     }
 
+    if (records_buffer[incoming_ray_idx].num == 0) {
+        return;
+    }
+
     for (int i = 0; i < records_buffer[incoming_ray_idx].num; ++i) {
         if (records_buffer[incoming_ray_idx].hits[i].primitive_id == records_buffer[incoming_ray_idx].hits[i].exact_id) {
             Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
@@ -140,280 +144,26 @@ __kernel void HitSurface
         }
     }   
 
+    uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
+    uint sample_idx = sample_counter[0];
+
+    uint shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
+    shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
+    direct_light_samples[shadow_ray_idx] = (0.0F, 0.0F, 0.0F);
+
     sort(&records_buffer[incoming_ray_idx]);
 
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
-
-    if (record.num <= 0) {
-        return;
-    }
-
-    int shadow_ray_idx = -1;
-    int outgoing_ray_idx = -1;
-    Ray incoming_ray = incoming_rays[incoming_ray_idx];
-    float3 incoming = -incoming_ray.direction.xyz;
-    uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-    uint sample_idx = sample_counter[0];
-    int x = pixel_idx % width;
-    int y = pixel_idx / width;
-    
-    if (hit.primitive_id != INVALID_ID) {
-
-        Triangle triangle = triangles[hit.primitive_id];
-
-        float3 position = InterpolateAttributes(triangle.v1.position,
-            triangle.v2.position, triangle.v3.position, hit.bc);
-
-        float3 geometry_normal = normalize(cross(triangle.v2.position - triangle.v1.position, triangle.v3.position - triangle.v1.position));
-
-        float2 texcoord = InterpolateAttributes2(triangle.v1.texcoord.xy,
-            triangle.v2.texcoord.xy, triangle.v3.texcoord.xy, hit.bc);
-
-        float3 normal = normalize(InterpolateAttributes(triangle.v1.normal,
-            triangle.v2.normal, triangle.v3.normal, hit.bc));
-
-        PackedMaterial packed_material = materials[triangle.mtlIndex];
-        Material material;
-        ApplyTextures(packed_material, &material, texcoord, textures, texture_data);
-
-        float3 hit_throughput = throughputs[pixel_idx];
-
-        // Direct lighting
-        {
-            float s_light = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_LIGHT, BLUE_NOISE_BUFFERS);
-            float3 outgoing;
-            float pdf;
-            float3 light_radiance = Light_Sample(analytic_lights, scene_info, position, normal, s_light, &outgoing, &pdf);
-
-            float distance_to_light = length(outgoing);
-            outgoing = normalize(outgoing);
-
-            float3 brdf = EvaluateMaterial(material, normal, incoming, outgoing);
-            float3 light_sample = light_radiance * hit_throughput * brdf / pdf * max(dot(outgoing, normal), 0.0f);
-
-            bool spawn_shadow_ray = (pdf > 0.0f) && (dot(light_sample, light_sample) > 0.0f);
-
-            if (spawn_shadow_ray) {
-                Ray shadow_ray;
-                shadow_ray.origin.xyz = position + normal * EPS;
-                shadow_ray.origin.w = 0.0f;
-                shadow_ray.direction.xyz = outgoing;
-                shadow_ray.direction.w = distance_to_light;
-
-                ///@TODO: use LDS
-                shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
-
-                // Store to the memory
-                shadow_rays[shadow_ray_idx] = shadow_ray;
-                shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
-                direct_light_samples[shadow_ray_idx] = light_sample;
-            }
+    //
+    for (int i = 0; i + 1 < record.num; ++i) {
+        if (i > 30) break;
+        if (record.hits[i + 1].exact_id != record.hits[i].exact_id) {
         }
-
-        // Indirect lighting
-        {
-            // Sample bxdf
-            float2 s;
-            s.x = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_U, BLUE_NOISE_BUFFERS);
-            s.y = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_V, BLUE_NOISE_BUFFERS);
-            float s1 = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_LAYER, BLUE_NOISE_BUFFERS);
-
-            float pdf = 0.0f;
-            float3 throughput = 0.0f;
-            float3 outgoing;
-            float offset;
-            float3 bxdf = SampleBxdf(s1, s, material, normal, incoming, &outgoing, &pdf, &offset);
-
-            if (pdf > 0.0) {
-                throughput = bxdf / pdf;
-            }
-
-            throughputs[pixel_idx] *= throughput;
-
-            bool spawn_outgoing_ray = (pdf > 0.0);
-
-            if (spawn_outgoing_ray) {
-                ///@TODO: use LDS
-                outgoing_ray_idx = atomic_add(outgoing_ray_counter, 1);
-
-                Ray outgoing_ray;
-                outgoing_ray.origin.xyz = position + geometry_normal * EPS * offset;
-                outgoing_ray.origin.w = 0.0f;
-                outgoing_ray.direction.xyz = outgoing;
-                outgoing_ray.direction.w = MAX_RENDER_DIST;
-
-                outgoing_rays[outgoing_ray_idx] = outgoing_ray;
-                outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
-            }
+        else {
+            float radiance = record.hits[i + 1].time - record.hits[i].time;
+            direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 1.0f, 1.0f);
         }
     }
-
-    if (shadow_ray_idx == -1) {
-        if (record.num != 0) {
-            uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-            shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
-            shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
-
-        }
-    }
-
-    if (outgoing_ray_idx == -1) {
-        if (record.num != 0) {
-            //flag = 1;
-            //return;
-            uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-            outgoing_ray_idx = atomic_add(outgoing_ray_counter, 1);
-            outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
-        }
-    }
-
-    for (int i = 0; i < record.num; i += 2) {
-
-        Hit hit = record.hits[i];
-        Triangle triangle = triangles[hit.primitive_id];
-        float radiance_base = (record.hits[i + 1].t - record.hits[i].t) * 0.05;
-
-        float u = 0, v = 0;
-        float3 v0i = triangle.src.src;
-        float3 v0j = triangle.src.dest;
-        float3 v1i = triangle.dst.src;
-        float3 v1j = triangle.dst.dest;
-    
-        float3 x = InterpolateAttributes(triangle.v1.position,
-            triangle.v2.position, triangle.v3.position, hit.bc);
-        float tan1 = length(cross(v0i - x, v0j - x)) / dot(v0i - x, v0j - x);
-        float tan2 = length(cross(v0j - x, v1j - x)) / dot(v0j - x, v1j - x);
-        float tan3 = length(cross(v1j - x, v1i - x)) / dot(v1j - x, v1i - x);
-        float tan4 = length(cross(v1i - x, v0j - x)) / dot(v1i - x, v0j - x);
-        float w0i = (tan1 + tan2) / length(v0i - x);
-        float w0j = (tan2 + tan3) / length(v0j - x);
-        float w1j = (tan3 + tan4) / length(v1j - x);
-        float w1i = (tan4 + tan1) / length(v1i - x);
-
-        u = (w1i + w1j) / (w0i + w0j + w1i + w1j);
-        v = (w0i + w0j) / (w0i + w0j + w1i + w1j);
-
-        float3 p = (1.0f - u) * ((1.0f - v) * v0i + v * v0j) + u * ((1.0f - v) * v1i + v * v1j);
-
-        triangle = triangles[triangle.prismTri >> 2];
-        
-        float radiance = calcRadiance(&record, triangles, i) * radiance_base;
-
-        //// Rendering
-        /*{
-            Ray incoming_ray = incoming_rays[incoming_ray_idx];
-            float3 incoming = -incoming_ray.direction.xyz;
-
-            uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-            uint sample_idx = sample_counter[0];
-
-            int x = pixel_idx % width;
-            int y = pixel_idx / width;
-
-            float3 position = InterpolateAttributes(triangle.v1.position,
-                triangle.v2.position, triangle.v3.position, (0.5, 0.5));
-
-            float3 position = p;
-
-            float3 geometry_normal = normalize(cross(triangle.v2.position - triangle.v1.position, triangle.v3.position - triangle.v1.position));
-
-            float2 texcoord = InterpolateAttributes2(triangle.v1.texcoord.xy,
-                triangle.v2.texcoord.xy, triangle.v3.texcoord.xy, (0.5, 0.5));
-
-            float3 normal = normalize(InterpolateAttributes(triangle.v1.normal,
-                triangle.v2.normal, triangle.v3.normal, (0.5, 0.5)));
-
-            PackedMaterial packed_material = materials[triangle.mtlIndex];
-            Material material;
-            ApplyTextures(packed_material, &material, texcoord, textures, texture_data);
-
-            float3 hit_throughput = throughputs[pixel_idx];
-
-           
-
-            // Direct lighting
-            {
-                float s_light = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_LIGHT, BLUE_NOISE_BUFFERS);
-                float3 outgoing;
-                float pdf;
-                float3 light_radiance = Light_Sample(analytic_lights, scene_info, position, normal, s_light, &outgoing, &pdf);
-
-                float distance_to_light = length(outgoing);
-                outgoing = normalize(outgoing);
-
-                float3 brdf = EvaluateMaterial(material, normal, incoming, outgoing);
-                float3 light_sample = light_radiance * hit_throughput * brdf / pdf * max(dot(outgoing, normal), 0.0f);
-                light_sample.x = max(light_sample.x, 0.0f);
-                light_sample.y = max(light_sample.y, 0.0f);
-                light_sample.z = max(light_sample.z, 0.0f);
-
-
-                bool spawn_shadow_ray = (pdf > 0.0f) && (dot(light_sample, light_sample) > 0.0f);
-
-                if (spawn_shadow_ray) {
-                    Ray shadow_ray;
-                    shadow_ray.origin.xyz = position + normal * EPS;
-                    shadow_ray.origin.w = 0.0f;
-                    shadow_ray.direction.xyz = outgoing;
-                    shadow_ray.direction.w = distance_to_light;
-
-                    ///@TODO: use LDS
-
-                    // Store to the memory
-                    //shadow_rays[shadow_ray_idx] = shadow_ray;
-                    // shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
-                    direct_light_samples[shadow_ray_idx] += light_sample * radiance;
-                    //float3 var = light_sample;
-                    //direct_light_samples[shadow_ray_idx] = direct_light_samples[shadow_ray_idx] + (1.0f, 1.0f, 1.0f);
-                    //direct_light_samples[shadow_ray_idx] = min(direct_light_samples[shadow_ray_idx], (0.0f, 0.0f, 0.0f));
-                    //direct_light_samples[shadow_ray_idx] -= var;
-                  
-                }
-            }
-
-            
-
-            // Indirect lighting
-            {
-                // Sample bxdf
-                float2 s;
-                s.x = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_U, BLUE_NOISE_BUFFERS);
-                s.y = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_V, BLUE_NOISE_BUFFERS);
-                float s1 = SampleRandom(x, y, sample_idx, bounce, SAMPLE_TYPE_BXDF_LAYER, BLUE_NOISE_BUFFERS);
-
-                float pdf = 0.0f;
-                float3 throughput = 0.0f;
-                float3 outgoing;
-                float offset;
-                float3 bxdf = SampleBxdf(s1, s, material, normal, incoming, &outgoing, &pdf, &offset);
-
-                if (pdf > 0.0) {
-                    throughput = bxdf / pdf;
-                }
-
-                throughputs[pixel_idx] *= throughput;
-
-                bool spawn_outgoing_ray = (pdf > 0.0);
-
-                if (spawn_outgoing_ray) {
-                    ///@TODO: use LDS
-                    
-
-                    Ray outgoing_ray;
-                    outgoing_ray.origin.xyz = position + geometry_normal * EPS * offset;
-                    outgoing_ray.origin.w = 0.0f;
-                    outgoing_ray.direction.xyz = outgoing;
-                    outgoing_ray.direction.w = MAX_RENDER_DIST;
-
-                    // outgoing_rays[outgoing_ray_idx] = outgoing_ray;
-                    outgoing_pixel_indices[outgoing_ray_idx] = pixel_idx;
-                }
-            }
-        }*/
-
-    } 
-    
-    
 
 }

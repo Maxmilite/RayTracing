@@ -43,8 +43,12 @@ __kernel void AccumulateDirectSamples
 
     uint shadow_hit = shadow_hits[ray_idx];
 
-    if (shadow_hit == INVALID_ID) {
-        uint pixel_idx = shadow_pixel_indices[ray_idx];
-        result_radiance[pixel_idx].xyz += direct_light_samples[ray_idx];
-    }
+    uint pixel_idx = shadow_pixel_indices[ray_idx];
+    result_radiance[pixel_idx].xyz = (float3) (1.0F, 1.0F, 1.0F);
+
+    //if (shadow_hit == INVALID_ID) {
+    //    uint pixel_idx = shadow_pixel_indices[ray_idx];
+    //    //result_radiance[pixel_idx].xyz += direct_light_samples[ray_idx];
+    //    //result_radiance[pixel_idx].xyz = (float3) (100.f, 100.f, 100.f);
+    //}
 }
