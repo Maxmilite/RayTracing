@@ -177,7 +177,8 @@ STRUCT_BEGIN(Triangle)
     Edge src, dst;
     unsigned int mtlIndex;
     unsigned int prismTri;
-    unsigned int padding[2];
+    unsigned int origin_idx;
+    unsigned int exact_id;
 STRUCT_END(Triangle)
 
 STRUCT_BEGIN(RTTriangle)
@@ -197,7 +198,8 @@ STRUCT_BEGIN(RTTriangle)
     float3 position3;
     Edge src, dst;
     unsigned int prismTri;
-    unsigned int padding[3];
+    unsigned int exact_id;
+    unsigned int padding[2];
 STRUCT_END(RTTriangle)
 
 STRUCT_BEGIN(CellData)

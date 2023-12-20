@@ -373,6 +373,7 @@ void CLPathTraceIntegrator::UploadGPUData(Scene const& scene, AccelerationStruct
         for (auto const& triangle : triangles) {
             rt_triangles.emplace_back(triangle.v1.position, triangle.v2.position, triangle.v3.position, triangle.prismTri);
             rt_triangles.back().InsertEdge(triangle.src, triangle.dst);
+            rt_triangles.back().exact_id = triangle.exact_id;
         }
 
         rt_triangle_buffer_ = cl::Buffer(cl_context_.GetContext(), CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,

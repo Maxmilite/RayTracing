@@ -181,7 +181,7 @@ __kernel void TraceBvh
                         RTTriangle triangle = triangles[node.offset + i];
                         if ((triangle.prismTri & 1) == 0) {
                             hit.exact_id = hit.primitive_id;
-                            if (triangle.prismTri == 2) hit.exact_id--;
+                            if (triangle.prismTri == 2) hit.exact_id = triangle.exact_id;
                             records[ray_idx].hits[records[ray_idx].num] = hit;
                             records[ray_idx].num++;
                         }

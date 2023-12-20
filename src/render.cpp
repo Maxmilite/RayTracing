@@ -35,6 +35,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 
 Render::Render(Window& window, RenderBackend backend, Scene& scene)
     : window_(window)
@@ -60,14 +61,28 @@ Render::Render(Window& window, RenderBackend backend, Scene& scene)
     // Build it right here
     acc_structure_->BuildCPU(scene_.GetTriangles());
 
-    const auto& triangles_ = scene_.GetTriangles();
- 
+    auto& triangles_ = scene_.GetTriangles();
+
+    std::unordered_map<int, int> mp;
+
     for (int i = 0; i < triangles_.size(); ++i) {
-        std::cout << "Triangles[" << i << "]: \n";
-        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v1.position.x << " " << triangles_[i].v1.position.y << " " << triangles_[i].v1.position.z << '\n';
-        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v2.position.x << " " << triangles_[i].v2.position.y << " " << triangles_[i].v2.position.z << '\n';
-        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v3.position.x << " " << triangles_[i].v3.position.y << " " << triangles_[i].v3.position.z << '\n';
+        mp[triangles_[i].origin_idx] = i;
     }
+    
+    mp[-1] = -1;
+
+    for (auto& i : triangles_) {
+        i.exact_id = mp[i.exact_id];
+        i.src.tri1 = mp[i.src.tri1];
+        i.src.tri2 = mp[i.src.tri2];
+    }
+
+    //for (int i = 0; i < triangles_.size(); ++i) {
+    //    std::cout << "Triangles[" << i << "]: \n";
+    //    std::cout << std::fixed << std::setprecision(2) << triangles_[i].v1.position.x << " " << triangles_[i].v1.position.y << " " << triangles_[i].v1.position.z << '\n';
+    //    std::cout << std::fixed << std::setprecision(2) << triangles_[i].v2.position.x << " " << triangles_[i].v2.position.y << " " << triangles_[i].v2.position.z << '\n';
+    //    std::cout << std::fixed << std::setprecision(2) << triangles_[i].v3.position.x << " " << triangles_[i].v3.position.y << " " << triangles_[i].v3.position.z << '\n';
+    //}
 
     // TODO, NOTE: this is done after building the acc structure because it reorders triangles
     // Need to get rid of reordering

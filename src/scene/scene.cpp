@@ -249,7 +249,11 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
             }
 
             triangles_.emplace_back(v[0], v[1], v[2], 0, 0);
+            triangles_.back().exact_id = triangles_.size() - 1;
+            triangles_.back().origin_idx = triangles_.size() - 1;
             triangles_.emplace_back(moved_v[0], moved_v[1], moved_v[2], 0, 2);
+            triangles_.back().exact_id = triangles_.size() - 2;
+            triangles_.back().origin_idx = triangles_.size() - 1;
 
             handle_edge(v[0], v[1], triangles_.size() - 2);
             handle_edge(v[1], v[2], triangles_.size() - 2);
@@ -301,6 +305,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         Triangle triangle(v1, v2, v3, 0, 1);
         triangle.InsertEdge(edge, edgeDst);
         triangles_.emplace_back(triangle);
+        triangles_.back().origin_idx = triangles_.size() - 1;
 
         v1.position.x = edge.src.x + movement;
         v1.position.y = edge.src.y + movement;
@@ -327,6 +332,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         triangle = Triangle(v1, v2, v3, 0, 3);
         triangle.InsertEdge(edge, edgeDst);
         triangles_.emplace_back(triangle);
+        triangles_.back().origin_idx = triangles_.size() - 1;
     }
 
 
