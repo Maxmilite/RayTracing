@@ -198,6 +198,8 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         else throw std::runtime_error("Error occurred while handling edge.");
     };
 
+    const float3 vec(movement, movement, movement);
+
     for (auto const& shape : shapes) {
         auto const& indices = shape.mesh.indices;
         // The mesh is triangular
@@ -242,7 +244,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
 
 
             // Prism
-            const float3 vec(movement, movement, movement);
+            
             Vertex moved_v[3] = { v[0], v[1], v[2] };
             for (int i = 0; i < 3; ++i) {
                 moved_v[i].position += vec;
@@ -277,8 +279,8 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
     for (const auto& edge : edges_) {
 
         auto edgeDst = edge;
-        edgeDst.src += movement;
-        edgeDst.dest += movement;
+        edgeDst.src += vec;
+        edgeDst.dest += vec;
 
         Vertex v1;
         v1.position.x = edge.src.x;
@@ -291,9 +293,9 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         v2.position.z = edge.dest.z;
 
         Vertex v3;
-        v3.position.x = edge.src.x + movement;
-        v3.position.y = edge.src.y + movement;
-        v3.position.z = edge.src.z + movement;
+        v3.position.x = edgeDst.src.x;
+        v3.position.y = edgeDst.src.y;
+        v3.position.z = edgeDst.src.z;
 
         flip_vector(v1.position, flip_yz);
         flip_vector(v1.normal, flip_yz);
@@ -307,12 +309,12 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         triangles_.emplace_back(triangle);
         triangles_.back().origin_idx = triangles_.size() - 1;
 
-        v1.position.x = edge.src.x + movement;
-        v1.position.y = edge.src.y + movement;
-        v1.position.z = edge.src.z + movement;
-        v2.position.x = edge.dest.x + movement;
-        v2.position.y = edge.dest.y + movement;
-        v2.position.z = edge.dest.z + movement;
+        v1.position.x = edgeDst.src.x;
+        v1.position.y = edgeDst.src.y;
+        v1.position.z = edgeDst.src.z;
+        v2.position.x = edgeDst.dest.x;
+        v2.position.y = edgeDst.dest.y;
+        v2.position.z = edgeDst.dest.z;
         v3.position.x = edge.dest.x;
         v3.position.y = edge.dest.y;
         v3.position.z = edge.dest.z;

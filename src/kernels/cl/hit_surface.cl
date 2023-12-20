@@ -27,7 +27,7 @@
 #include "src/kernels/common/sampling.h"
 #include "src/kernels/common/light.h"
 
-float getU(Hit hit, const __global Triangle* triangles) {
+float getU(Hit hit, const __global Triangle* triangles, uint pixel_idx) {
     Triangle triangle = triangles[hit.primitive_id];
 
     float u = 0, v = 0;
@@ -38,21 +38,23 @@ float getU(Hit hit, const __global Triangle* triangles) {
 
     float3 x = InterpolateAttributes(triangle.v1.position,
         triangle.v2.position, triangle.v3.position, hit.bc);
-    float tan1 = length(cross(v0i - x, v0j - x)) / dot(v0i - x, v0j - x);
-    float tan2 = length(cross(v0j - x, v1j - x)) / dot(v0j - x, v1j - x);
-    float tan3 = length(cross(v1j - x, v1i - x)) / dot(v1j - x, v1i - x);
-    float tan4 = length(cross(v1i - x, v0j - x)) / dot(v1i - x, v0j - x);
-    float w0i = (tan1 + tan2) / length(v0i - x);
-    float w0j = (tan2 + tan3) / length(v0j - x);
-    float w1j = (tan3 + tan4) / length(v1j - x);
-    float w1i = (tan4 + tan1) / length(v1i - x);
-
+    float tan1 = ((length(v0i - x) * length(v0j - x)) - dot(v0i - x, v0j - x)) / length(cross(v0i - x, v0j - x));
+    float tan2 = ((length(v0j - x) * length(v1j - x)) - dot(v0j - x, v1j - x)) / length(cross(v0j - x, v1j - x));
+    float tan3 = ((length(v1j - x) * length(v1i - x)) - dot(v1j - x, v1i - x)) / length(cross(v1j - x, v1i - x));
+    float tan4 = ((length(v1i - x) * length(v0j - x)) - dot(v1i - x, v0j - x)) / length(cross(v1i - x, v0j - x));
+    float w0i = (tan1 + tan4) / length(v0i - x);
+    float w0j = (tan1 + tan2) / length(v0j - x);
+    float w1j = (tan2 + tan3) / length(v1j - x);
+    float w1i = (tan4 + tan3) / length(v1i - x);
+    float tot = w0i + w0j + w1j + w1i;
+    w0i /= tot, w0j /= tot, w1j /= tot, w1i /= tot;
     u = (w1i + w1j) / (w0i + w0j + w1i + w1j);
+    //if (pixel_idx == 0) {
+    //    printf("Bilinear Coordiates: %.2lf %.2lf %.2lf %.2lf\n", w0i, w0j, w1i, w1j);
+    //    printf("XYZU: %.2lf %.2lf\n", x.z, u);
+    //}
+    //return x.z;
     return u;
-}
-
-float calcRadiance(HitRecord* record, const __global Triangle* triangles, uint index) {
-    return 0.0F;
 }
 
 bool compare(Hit a, Hit b) {
@@ -132,6 +134,8 @@ __kernel void HitSurface
     if (records_buffer[incoming_ray_idx].num == 0) {
         return;
     }
+    uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
+    uint sample_idx = sample_counter[0];
 
     for (int i = 0; i < records_buffer[incoming_ray_idx].num; ++i) {
         Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
@@ -139,13 +143,12 @@ __kernel void HitSurface
             if (triangle.prismTri == 0) records_buffer[incoming_ray_idx].hits[i].time = 0;
             else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
         } else {
-            float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles);
+            float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles, pixel_idx);
+            
             records_buffer[incoming_ray_idx].hits[i].time = u;
         }
     }   
 
-    uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
-    uint sample_idx = sample_counter[0];
 
     uint shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
     shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
@@ -184,13 +187,11 @@ __kernel void HitSurface
             if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
                 float radiance = record.hits[i + 1].time - record.hits[i].time;
                 direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
-                if (pixel_idx == 0) {
-                    printf("%f --> %f, tot %f\n", record.hits[i + 1].time, record.hits[i].time, radiance);
-                }
+                //if (pixel_idx == 0) {
+                //    printf("%f --> %f, tot %f\n", record.hits[i + 1].time, record.hits[i].time, radiance);
+                //    printf("Radiance: %f | %.2f, %.2f, %.2f\n", radiance, direct_light_samples[shadow_ray_idx].x, direct_light_samples[shadow_ray_idx].y, direct_light_samples[shadow_ray_idx].z);
+                //}
                 flag = 1;
-                if (pixel_idx == 0) {
-                    printf("Radiance: %f | %.2f, %.2f, %.2f\n", radiance, direct_light_samples[shadow_ray_idx].x, direct_light_samples[shadow_ray_idx].y, direct_light_samples[shadow_ray_idx].z);
-                }
             }
             else {
                 flag = 0;
