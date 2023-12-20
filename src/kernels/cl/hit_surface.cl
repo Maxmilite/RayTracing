@@ -156,6 +156,22 @@ __kernel void HitSurface
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
     direct_light_samples[shadow_ray_idx] += (float3) ((record.num) * 1.0f, 0.1f, 0.1f);
+    
+    if (pixel_idx == 0) {
+
+        /*printf("Hit Size: %d\n", sizeof(Hit));
+        printf("HitRecord Size: %d\n", sizeof(HitRecord));
+       */ 
+        printf("%d\n", record.num);
+        if (record.num != 0)
+        for (unsigned i = 0; i < record.num; ++i) {
+            //int x = record.hits[i].exact_id;
+            printf("%d ", record.hits[0].primitive_id);
+            printf("%d ", record.hits[1].primitive_id);
+        }
+        printf("\n");
+    }
+
     //
     /*for (int i = 0; i + 1 < record.num; i += 2) {
         if (i > 30) break;

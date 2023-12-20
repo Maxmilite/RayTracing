@@ -115,19 +115,7 @@ bool RayBounds(Bounds3 bounds, float3 ray_origin, float3 ray_inv_dir, float t_mi
     float tmin = max(max3(min(t0, t1)), t_min);
     float tmax = min(min3(max(t0, t1)), t_max);
 
-    return (tmax >= tmin);
-
-    //float tmin = t_min, tmax = t_max;
-
-    /* {
-        if (ray_inv_dir.x < 0.0f) { float var = t0.x; t0.x = t1.x; t1.x = var; }
-        if (ray_inv_dir.y < 0.0f) { float var = t0.y; t0.y = t1.y; t1.y = var; }
-        if (ray_inv_dir.z < 0.0f) { float var = t0.z; t0.z = t1.z; t1.z = var; }
-        float tmin = max(max3(min(t0, t1)), t_min);
-        float tmax = min(min3(max(t0, t1)), t_max);
-        return (tmax >= tmin);
-    }*/
-    
+    return (tmax >= tmin);    
 }
 
 __kernel void TraceBvh
@@ -169,7 +157,9 @@ __kernel void TraceBvh
     int nodesToVisit[64];
 
 
+    for (int i = 0; i < 30; ++i) records[ray_idx].hits[i].primitive_id = 0;
     records[ray_idx].num = 0;
+
     while (true) {
         LinearBVHNode node = nodes[currentNodeIndex];
         if (RayBounds(node.bounds, ray.origin.xyz, ray_inv_dir, ray.origin.w, ray.direction.w)) {
@@ -183,7 +173,7 @@ __kernel void TraceBvh
                         hit.primitive_id = node.offset + i;
                         // Set ray t_max
                         // TODO: remove t from hit structure
-                        ray.direction.w = hit.t;
+                        //ray.direction.w = hit.t;
 //#ifdef SHADOW_RAYS
                         shadow_hit = INVALID_ID;
                             //goto endtrace;
@@ -247,7 +237,9 @@ endtrace:
 
     // TODO: Remove this
 
-    if (records[ray_idx].num) hits[ray_idx] = records[ray_idx].hits[0];
+    if (records[ray_idx].num) {
+        hits[ray_idx] = records[ray_idx].hits[0];
+    }
     else {
         Hit hit;
         hit.primitive_id = INVALID_ID;

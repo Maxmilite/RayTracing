@@ -41,6 +41,7 @@
 #include <cctype>
 #include <functional>
 #include <unordered_map>
+#include <iomanip>
 
 #undef max
 
@@ -332,6 +333,13 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
 
     std::cout << "Load successful (" << triangles_.size() << " triangles)" << std::endl;
     std::cout << "Load successful (" << edges_.size() << " edges)" << std::endl;
+
+    for (int i = 0; i < triangles_.size(); ++i) {
+        std::cout << "Triangles[" << i << "]: \n";
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v1.position.x << " " << triangles_[i].v1.position.y << " " << triangles_[i].v1.position.z << '\n';
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v2.position.x << " " << triangles_[i].v2.position.y << " " << triangles_[i].v2.position.z << '\n';
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v3.position.x << " " << triangles_[i].v3.position.y << " " << triangles_[i].v3.position.z << '\n';
+    }
 
 }
 

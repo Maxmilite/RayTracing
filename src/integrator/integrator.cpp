@@ -25,6 +25,7 @@
 #include "integrator.hpp"
 
 void Integrator::Integrate() {
+
     if (request_reset_ || enable_denoiser_) {
         Reset();
         request_reset_ = false;

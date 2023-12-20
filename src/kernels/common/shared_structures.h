@@ -229,9 +229,9 @@ STRUCT_BEGIN(Camera)
 STRUCT_END(Camera)
 
 STRUCT_BEGIN(HitRecord)
-    Hit hits[32];
+    Hit hits[31];
     unsigned int num;
-    unsigned int padding[15];
+    unsigned int padding[7];
 STRUCT_END(HitRecord)
 
 #endif // SHARED_STRUCTURES_HPP

@@ -479,6 +479,7 @@ void CLPathTraceIntegrator::AdvanceSampleCount() {
 }
 
 void CLPathTraceIntegrator::GenerateRays() {
+
     std::uint32_t num_rays = width_ * height_;
     cl_context_.ExecuteKernel(*raygen_kernel_, num_rays);
 }
@@ -610,6 +611,7 @@ void CLPathTraceIntegrator::ShadeSurfaceHits(std::uint32_t bounce) {
 
 void CLPathTraceIntegrator::AccumulateDirectSamples() {
     std::uint32_t max_num_rays = width_ * height_;
+    int status = 0;
     cl_context_.ExecuteKernel(*accumulate_direct_samples_kernel_, max_num_rays);
 }
 
