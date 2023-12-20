@@ -33,6 +33,7 @@
 #include <backends/imgui_impl_win32.h>
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 
 Render::Render(Window& window, RenderBackend backend, Scene& scene)
@@ -58,6 +59,15 @@ Render::Render(Window& window, RenderBackend backend, Scene& scene)
     acc_structure_ = std::make_unique<Bvh>();
     // Build it right here
     acc_structure_->BuildCPU(scene_.GetTriangles());
+
+    const auto& triangles_ = scene_.GetTriangles();
+ 
+    for (int i = 0; i < triangles_.size(); ++i) {
+        std::cout << "Triangles[" << i << "]: \n";
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v1.position.x << " " << triangles_[i].v1.position.y << " " << triangles_[i].v1.position.z << '\n';
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v2.position.x << " " << triangles_[i].v2.position.y << " " << triangles_[i].v2.position.z << '\n';
+        std::cout << std::fixed << std::setprecision(2) << triangles_[i].v3.position.x << " " << triangles_[i].v3.position.y << " " << triangles_[i].v3.position.z << '\n';
+    }
 
     // TODO, NOTE: this is done after building the acc structure because it reorders triangles
     // Need to get rid of reordering

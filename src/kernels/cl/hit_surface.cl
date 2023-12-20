@@ -155,33 +155,41 @@ __kernel void HitSurface
 
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
-    direct_light_samples[shadow_ray_idx] += (float3) ((record.num) * 1.0f, 0.1f, 0.1f);
+    //direct_light_samples[shadow_ray_idx] = (float3) ((record.num) * 1.0f, 0.1f, 0.1f);
+    direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
     
     if (pixel_idx == 0) {
 
         /*printf("Hit Size: %d\n", sizeof(Hit));
         printf("HitRecord Size: %d\n", sizeof(HitRecord));
        */ 
-        printf("%d\n", record.num);
-        if (record.num != 0)
-        for (unsigned i = 0; i < record.num; ++i) {
-            //int x = record.hits[i].exact_id;
-            printf("%d ", record.hits[0].primitive_id);
-            printf("%d ", record.hits[1].primitive_id);
+        printf("%u\n", record.num);
+        if (record.num > 0 && record.num <= 2) {
+            const unsigned n = min(record.num, 31u);
+            for (unsigned i = 0; i < n; ++i) {
+                Triangle triangle = triangles[record.hits[i].exact_id];
+                printf("[%u] %u: ", i, record.hits[i].exact_id);
+                printf("(%.2f, %.2f, %.2f) ", triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z);
+                printf("(%.2f, %.2f, %.2f) ", triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z);
+                printf("(%.2f, %.2f, %.2f) ", triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z);
+                printf("\n");
+            }
         }
-        printf("\n");
     }
 
-    //
-    /*for (int i = 0; i + 1 < record.num; i += 2) {
-        if (i > 30) break;
-        if (record.hits[i + 1].exact_id != record.hits[i].exact_id) {
-            
+    {
+        int flag = 0;
+        for (int i = 0, limit = min(30u, record.num); i + 1 < limit; ++i) {
+            if (flag) continue;
+            flag = 0;
+            if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
+                float radiance = record.hits[i + 1].time - record.hits[i].time;
+                direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 0.1f, 0.1f);
+                flag = 1;
+            }
+            else {
+                flag = 0;
+            }
         }
-        else {
-            float radiance = record.hits[i + 1].time - record.hits[i].time;
-            direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 0.1f, 0.1f);
-        }
-    }*/
-
+    }
 }
