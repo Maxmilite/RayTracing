@@ -71,6 +71,14 @@ Render::Render(Window& window, RenderBackend backend, Scene& scene)
     
     mp[-1] = -1;
 
+    for (int i = 0; i < triangles_.size(); ++i) {
+        std::cerr << i << " ---> " << mp[i] << std::endl;
+    }
+
+    for (int i = 0; i < triangles_.size(); ++i) {
+        std::cerr << "prismtri of " << i << ": " << triangles_[i].prismTri << std::endl;
+    }
+
     for (auto& i : triangles_) {
         i.exact_id = mp[i.exact_id];
         i.src.tri1 = mp[i.src.tri1];

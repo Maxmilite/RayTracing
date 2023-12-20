@@ -134,8 +134,8 @@ __kernel void HitSurface
     }
 
     for (int i = 0; i < records_buffer[incoming_ray_idx].num; ++i) {
-        if (records_buffer[incoming_ray_idx].hits[i].primitive_id == records_buffer[incoming_ray_idx].hits[i].exact_id) {
-            Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
+        Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
+        if ((triangle.prismTri & 1) == 0) {
             if (triangle.prismTri == 0) records_buffer[incoming_ray_idx].hits[i].time = 0;
             else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
         } else {
@@ -156,25 +156,24 @@ __kernel void HitSurface
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
     //direct_light_samples[shadow_ray_idx] = (float3) ((record.num) * 1.0f, 0.1f, 0.1f);
-    direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
+    //direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
     
     if (pixel_idx == 0) {
 
         /*printf("Hit Size: %d\n", sizeof(Hit));
         printf("HitRecord Size: %d\n", sizeof(HitRecord));
        */ 
-        printf("%u\n", record.num);
-        if (record.num > 0 && record.num <= 2) {
-            const unsigned n = min(record.num, 31u);
-            for (unsigned i = 0; i < n; ++i) {
-                Triangle triangle = triangles[record.hits[i].exact_id];
-                printf("[%u] %u: ", i, record.hits[i].exact_id);
-                printf("(%.2f, %.2f, %.2f) ", triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z);
-                printf("(%.2f, %.2f, %.2f) ", triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z);
-                printf("(%.2f, %.2f, %.2f) ", triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z);
-                printf("\n");
-            }
-        }
+        //if (record.num > 0 && record.num <= 2) {
+        //    const unsigned n = min(record.num, 31u);
+        //    for (unsigned i = 0; i < n; ++i) {
+        //        Triangle triangle = triangles[record.hits[i].exact_id];
+        //        printf("Hits at [%u] %u which prismtri = %d; at %f", i, record.hits[i].primitive_id, triangles[record.hits[i].primitive_id].prismTri, record.hits[i].time);
+        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z);
+        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z);
+        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z);
+        //        printf("\n");
+        //    }
+        //}
     }
 
     {
@@ -184,8 +183,14 @@ __kernel void HitSurface
             flag = 0;
             if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
                 float radiance = record.hits[i + 1].time - record.hits[i].time;
-                direct_light_samples[shadow_ray_idx] += radiance * (1.0f, 0.1f, 0.1f);
+                direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
+                if (pixel_idx == 0) {
+                    printf("%f --> %f, tot %f\n", record.hits[i + 1].time, record.hits[i].time, radiance);
+                }
                 flag = 1;
+                if (pixel_idx == 0) {
+                    printf("Radiance: %f | %.2f, %.2f, %.2f\n", radiance, direct_light_samples[shadow_ray_idx].x, direct_light_samples[shadow_ray_idx].y, direct_light_samples[shadow_ray_idx].z);
+                }
             }
             else {
                 flag = 0;
