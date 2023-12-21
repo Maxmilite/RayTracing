@@ -45,6 +45,105 @@
 
 #undef max
 
+#ifdef __cplusplus
+struct RTMatrix {
+    float data[4][4];
+
+    enum Axis {
+        X, Y, Z
+    };
+
+    RTMatrix() {
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                data[i][j] = (i == j);
+            }
+        }
+    }
+    RTMatrix(const float t[4][4]) {
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                data[i][j] = t[i][j];
+            }
+        }
+    }
+    RTMatrix operator* (const RTMatrix& x) {
+        RTMatrix res;
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                res.data[i][j] = 0;
+                for (int k = 0; k < 4; ++k) {
+                    res.data[i][j] += this->data[i][k] * x.data[k][j];
+                }
+            }
+        }
+        return res;
+    }
+    RTMatrix& operator*= (const RTMatrix& x) {
+        RTMatrix res = (*this) * x;
+        for (int i = 0; i < 4; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                this->data[i][j] = res.data[i][j];
+            }
+        }
+        return *this;
+    }
+
+    float3 transform(const float3& x) {
+        float ori[4] = { x.x, x.y, x.z, 1 }, res[4] = { 0, 0, 0, 0 };
+        for (int i = 0; i < 4; ++i) {
+            for (int k = 0; k < 4; ++k) {
+                res[i] += ori[k] * this->data[k][i];
+            }
+        }
+        return float3(res[0], res[1], res[2]);
+    }
+
+    void translation(float3 t) {
+        float var[4][4] = {
+            {1, 0, 0, 0},
+            {0, 1, 0, 0},
+            {0, 0, 1, 0},
+            {t.x, t.y, t.z, 1}
+        };
+        RTMatrix T = var;
+        (*this) *= T;
+    }
+
+    void rotation(Axis axis, float deg) {
+        RTMatrix T;
+        if (axis == Axis::Z) {
+            float var[4][4] = {
+                {cos(deg), sin(deg), 0, 0},
+                {-sin(deg), cos(deg), 0, 0},
+                {0, 0, 1, 0},
+                {0, 0, 0, 1}
+            };
+            T = var;
+        }
+        else if (axis == Axis::X) {
+            float var[4][4] = {
+                {1, 0, 0, 0},
+                {0, cos(deg), sin(deg), 0},
+                {0, -sin(deg), cos(deg), 0},
+                {0, 0, 0, 1}
+            };
+            T = var;
+        }
+        else if (axis == Axis::Y) {
+            float var[4][4] = {
+                {cos(deg), -sin(deg), 0, 0},
+                {0, 1, 0, 0},
+                {sin(deg), cos(deg), 0, 0},
+                {0, 0, 0, 1}
+            };
+            T = var;
+        }
+        (*this) *= T;
+    }
+};
+#endif
+
 Scene::Scene(const char* filename, float scale, bool flip_yz) {
     Load(filename, scale, flip_yz);
 }
@@ -198,7 +297,9 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         else throw std::runtime_error("Error occurred while handling edge.");
     };
 
-    const float3 vec(movement, movement, movement);
+    RTMatrix transform;
+    //transform.rotation(transform.Axis::Z, acos(-1) / 12 * 22);
+    transform.translation(float3(1.0f, 1.0f, 1.0f));
 
     for (auto const& shape : shapes) {
         auto const& indices = shape.mesh.indices;
@@ -247,8 +348,21 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
             
             Vertex moved_v[3] = { v[0], v[1], v[2] };
             for (int i = 0; i < 3; ++i) {
-                moved_v[i].position += vec;
+                moved_v[i].position = transform.transform(moved_v[i].position);
             }
+            
+
+            //for (int i = 0; i < 3; ++i) {
+            //    std::cerr << v[i].position.x << " "
+            //        << v[i].position.y << " "
+            //        << v[i].position.z << std::endl;
+            //}
+
+            //for (int i = 0; i < 3; ++i) {
+            //    std::cerr << moved_v[i].position.x << " " 
+            //        << moved_v[i].position.y << " "
+            //        << moved_v[i].position.z << std::endl;
+            //}
 
             triangles_.emplace_back(v[0], v[1], v[2], 0, 0);
             triangles_.back().exact_id = triangles_.size() - 1;
@@ -279,8 +393,8 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
     for (const auto& edge : edges_) {
 
         auto edgeDst = edge;
-        edgeDst.src += vec;
-        edgeDst.dest += vec;
+        edgeDst.src = transform.transform(edgeDst.src);
+        edgeDst.dest = transform.transform(edgeDst.dest);
 
         Vertex v1;
         v1.position.x = edge.src.x;

@@ -237,3 +237,5 @@ STRUCT_BEGIN(HitRecord)
 STRUCT_END(HitRecord)
 
 #endif // SHARED_STRUCTURES_HPP
+
+

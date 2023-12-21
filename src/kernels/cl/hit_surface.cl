@@ -197,9 +197,14 @@ __kernel void HitSurface
         for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
             if (record.hits[i].time < eps || record.hits[i].time + eps >= 1) {
                 if (fabs(minfloat2(record.hits[i].bc)) < eps || record.hits[i].bc.x + record.hits[i].bc.y + eps >= 1) {
-                    direct_light_samples[shadow_ray_idx] += (float3) (0.1f, 1.f, 0.1f);
+                    direct_light_samples[shadow_ray_idx] += (float3) (0.1f, 2.1f, 0.1f);
                 }
             }
+            //else {
+            //    if (fabs(minfloat2(record.hits[i].bc)) < eps || record.hits[i].bc.x + record.hits[i].bc.y + eps >= 1) {
+            //        direct_light_samples[shadow_ray_idx] += (float3) (1.1f, 1.1f, 0.1f);
+            //    }
+            //}
         }
         for (int i = 0, limit = min(30u, record.num); i + 1 < limit; ++i) {
             if (flag) {
