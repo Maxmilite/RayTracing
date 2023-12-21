@@ -180,7 +180,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         }
         };
 
-    const float movement = 1;
+    const float movement = 3;
 
     std::map<std::pair<float3, float3>, std::pair<int, int>> umap;
 

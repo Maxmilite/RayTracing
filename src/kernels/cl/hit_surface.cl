@@ -89,6 +89,10 @@ void sort(__global HitRecord* record) {
     quickSort(a, 0, n - 1);
 }
 
+float minfloat2(float2 x) {
+    return min(x.x, x.y);
+}
+
 __kernel void HitSurface
 (
     // Input
@@ -144,7 +148,6 @@ __kernel void HitSurface
             else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
         } else {
             float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles, pixel_idx);
-            
             records_buffer[incoming_ray_idx].hits[i].time = u;
         }
     }   
@@ -180,22 +183,41 @@ __kernel void HitSurface
     }
 
     {
+        if (pixel_idx == 0) {
+            printf("Record Count: %d\n", record.num);
+            for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
+                printf("Hit #%d: %d -> %d at %.2f\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_id, record.hits[i].time);
+            }
+        }
         int flag = 0;
+        int cnt = 0;
+        const float eps = 1e-3;
+        for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
+            if (record.hits[i].time < eps || record.hits[i].time + eps >= 1) {
+                if (fabs(minfloat2(record.hits[i].bc)) < eps || record.hits[i].bc.x + record.hits[i].bc.y + eps >= 1) {
+                    direct_light_samples[shadow_ray_idx] += (float3) (0.1f, 1.f, 0.1f);
+                }
+            }
+        }
         for (int i = 0, limit = min(30u, record.num); i + 1 < limit; ++i) {
-            if (flag) continue;
-            flag = 0;
+            if (flag) {
+                flag = 0;
+                continue;
+            }
             if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
                 float radiance = record.hits[i + 1].time - record.hits[i].time;
                 direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
-                //if (pixel_idx == 0) {
-                //    printf("%f --> %f, tot %f\n", record.hits[i + 1].time, record.hits[i].time, radiance);
-                //    printf("Radiance: %f | %.2f, %.2f, %.2f\n", radiance, direct_light_samples[shadow_ray_idx].x, direct_light_samples[shadow_ray_idx].y, direct_light_samples[shadow_ray_idx].z);
-                //}
+                if (pixel_idx == 0) {
+                    printf("Interval #%d: (%d, %d) causing [%f, %f], tot %f\n", ++cnt, i, i + 1, record.hits[i].time, record.hits[i + 1].time, radiance);
+                }
                 flag = 1;
             }
             else {
                 flag = 0;
             }
+        }
+        if (pixel_idx == 0) {
+            printf("\n");
         }
     }
 }
