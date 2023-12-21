@@ -84,7 +84,7 @@ void quickSort(Hit* a, int l, int r) {
 }
 
 void sort(__global HitRecord* record) {
-    int n = record->num;
+    int n = min(30u, record->num);
     Hit* a = record->hits;
     quickSort(a, 0, n - 1);
 }
@@ -128,6 +128,7 @@ __kernel void HitSurface
 
     __global HitRecord* records_buffer
 ) {
+
     uint incoming_ray_idx = get_global_id(0);
     uint num_incoming_rays = incoming_ray_counter[0];
 
@@ -135,36 +136,37 @@ __kernel void HitSurface
         return;
     }
 
-    if (records_buffer[incoming_ray_idx].num == 0) {
+    if (records_buffer[incoming_ray_idx].num <= 1) {
         return;
     }
     uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
     uint sample_idx = sample_counter[0];
 
-    for (int i = 0; i < records_buffer[incoming_ray_idx].num; ++i) {
-        Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
-        if ((triangle.prismTri & 1) == 0) {
-            if (triangle.prismTri == 0) records_buffer[incoming_ray_idx].hits[i].time = 0;
-            else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
-        } else {
-            float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles, pixel_idx);
-            records_buffer[incoming_ray_idx].hits[i].time = u;
-        }
-    }   
+    {
+        
+        for (int i = 0, limit = min(30u, records_buffer[incoming_ray_idx].num); i < limit; ++i) {
+            Triangle triangle = triangles[records_buffer[incoming_ray_idx].hits[i].primitive_id];
+            if ((triangle.prismTri & 1) == 0) {
+                if (triangle.prismTri == 0) records_buffer[incoming_ray_idx].hits[i].time = 0;
+                else if (triangle.prismTri == 2) records_buffer[incoming_ray_idx].hits[i].time = 1;
+            } else {
+                float u = getU(records_buffer[incoming_ray_idx].hits[i], triangles, pixel_idx);
+                records_buffer[incoming_ray_idx].hits[i].time = u;
+            }
+        }   
+
+    }
+
+    sort(&records_buffer[incoming_ray_idx]);
 
 
     uint shadow_ray_idx = atomic_add(shadow_ray_counter, 1);
     shadow_pixel_indices[shadow_ray_idx] = pixel_idx;
-    direct_light_samples[shadow_ray_idx] = (0.0F, 0.0F, 0.0F);
-
-    sort(&records_buffer[incoming_ray_idx]);
-
     Hit hit = hits[incoming_ray_idx];
     HitRecord record = records_buffer[incoming_ray_idx];
-    //direct_light_samples[shadow_ray_idx] = (float3) ((record.num) * 1.0f, 0.1f, 0.1f);
-    //direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
+    direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
     
-    if (pixel_idx == 0) {
+    //if (pixel_idx == 0) {
 
         /*printf("Hit Size: %d\n", sizeof(Hit));
         printf("HitRecord Size: %d\n", sizeof(HitRecord));
@@ -180,15 +182,15 @@ __kernel void HitSurface
         //        printf("\n");
         //    }
         //}
-    }
+    //}
 
     {
-        if (pixel_idx == 0) {
-            printf("Record Count: %d\n", record.num);
-            for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
-                printf("Hit #%d: %d -> %d at %.2f\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_id, record.hits[i].time);
-            }
-        }
+        //if (pixel_idx == 0) {
+        //    printf("Record Count: %d\n", record.num);
+        //    for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
+        //        printf("Hit #%d: %d -> %d at %.2f\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_idrecord.hits[i].time);
+        //    }
+        //}
         int flag = 0;
         int cnt = 0;
         const float eps = 1e-3;
@@ -207,17 +209,23 @@ __kernel void HitSurface
             if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
                 float radiance = record.hits[i + 1].time - record.hits[i].time;
                 direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
-                if (pixel_idx == 0) {
-                    printf("Interval #%d: (%d, %d) causing [%f, %f], tot %f\n", ++cnt, i, i + 1, record.hits[i].time, record.hits[i + 1].time, radiance);
-                }
+                //if (pixel_idx == 0) {
+                //    printf("Interval #%d: (%d, %d) causing [%f, %f], tot %f\n", ++cnt, i, i + 1, record.hits[i].timerecord.hits[i + 1].time, radiance);
+                //}
                 flag = 1;
             }
             else {
                 flag = 0;
             }
         }
-        if (pixel_idx == 0) {
-            printf("\n");
-        }
+        //if (pixel_idx == 0) {
+        //    printf("\n");
+        //}
     }
+
+
+    //if (get_global_id(0) == 0) {
+    //    printf("finish\n");
+    //}
+
 }

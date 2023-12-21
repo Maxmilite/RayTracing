@@ -34,6 +34,8 @@ __kernel void AccumulateDirectSamples
     // Output
     __global float4* result_radiance
 ) {
+
+
     uint ray_idx = get_global_id(0);
     uint num_rays = shadow_ray_counter[0];
 
@@ -47,7 +49,8 @@ __kernel void AccumulateDirectSamples
     //result_radiance[pixel_idx].xyz = (float3) (1.0F, 1.0F, 1.0F);
 
     if (shadow_hit == INVALID_ID) {
-        uint pixel_idx = shadow_pixel_indices[ray_idx];
-        result_radiance[pixel_idx].xyz += direct_light_samples[ray_idx];
+        {
+            result_radiance[pixel_idx].xyz += direct_light_samples[ray_idx];
+        }
     }
 }

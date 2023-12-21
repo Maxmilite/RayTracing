@@ -32,26 +32,36 @@ void Integrator::Integrate() {
     }
 
     GenerateRays();
+    //std::cerr << "Raygen" << " works" << std::endl;
 
     for (std::uint32_t bounce = 0; bounce <= max_bounces_; ++bounce) {
         IntersectRays(bounce);
+        //std::cerr << "trace bvh" << " #" << bounce << " works" << std::endl;
         if (bounce == 0) {
             ComputeAOVs();
+            //std::cerr << "aov" << " #" << bounce << " works" << std::endl;
         }
         ShadeMissedRays(bounce);
+        //std::cerr << "miss" << " #" << bounce << " works" << std::endl;
         ClearOutgoingRayCounter(bounce);
         ClearShadowRayCounter();
         ShadeSurfaceHits(bounce);
+        //std::cerr << "surface hit" << " #" << bounce << " works" << std::endl;
         //IntersectShadowRays();
         AccumulateDirectSamples();
+        //std::cerr << "acc. samples" << " #" << bounce << " works" << std::endl;
     }
 
     AdvanceSampleCount();
+    //std::cerr << "advance sample count" << " works" << std::endl;
     if (enable_denoiser_) {
         Denoise();
         CopyHistoryBuffers();
     }
     ResolveRadiance();
+    //std::cerr << "resolve" << " works" << std::endl;
+
+    //std::cerr << "-----------------LOOP------------------" << std::endl;
 }
 
 void Integrator::SetMaxBounces(std::uint32_t max_bounces) {

@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
         std::uint32_t window_width = 1600;
         std::uint32_t window_height = 900;
         bool use_opengl = false;
-        std::string scene_path = "assets/Triangle.obj";
+        std::string scene_path = "assets/Hammer.obj";
         float scene_scale = 1.0f;
         bool flip_yz = false;
 
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
         scene.AddDirectionalLight({ -0.6f, -1.5f, 3.5f }, { 15.0f, 10.0f, 5.0f });
 
         // Create the window
-        Window window(window_width, window_height, "RayTracing");
+        Window window(window_width, window_height, "Time Interval Ray Tracing for Motion Blur");
 
         // Create the renderer
         Render::RenderBackend backend = use_opengl ? Render::RenderBackend::kOpenGL : Render::RenderBackend::kOpenCL;

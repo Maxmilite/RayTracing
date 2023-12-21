@@ -67,18 +67,17 @@ __kernel void ResolveRadiance
         write_imagef(result, (int2)(x, y), (float4)(motion_vectors[global_id], 0.0f, 1.0f));
     }
     else {
-        // Shaded color
+         // Shaded color
 #ifdef ENABLE_DENOISER
         float3 hdr = radiance[global_id].xyz;
 #else
         float3 hdr = radiance[global_id].xyz / (float) sample_count;
+        
 #endif // ENABLE_DENOISER
 
         //float3 ldr = hdr / (hdr + 1.0f);
         float3 ldr = hdr;
-        /*if (global_id == 0) {
-            printf("%d | %.2f, %.2f, %.2f\n", sample_count, ldr.x, ldr.y, ldr.z);
-        }*/
         write_imagef(result, (int2)(x, y), (float4)(ldr, 1.0f));
+        //printf("%d | %.2f, %.2f, %.2f\n", sample_count, ldr.x, ldr.y, ldr.z);
     }
 }

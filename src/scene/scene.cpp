@@ -180,7 +180,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         }
         };
 
-    const float movement = 3;
+    const float movement = 1;
 
     std::map<std::pair<float3, float3>, std::pair<int, int>> umap;
 
@@ -391,7 +391,7 @@ std::size_t Scene::LoadTexture(char const* filename) {
 void Scene::CollectEmissiveTriangles() {
     for (auto triangle_idx = 0; triangle_idx < triangles_.size(); ++triangle_idx) {
         auto const& triangle = triangles_[triangle_idx];
-        float3 emission = UnpackRGBE(materials_[triangle.mtlIndex].emission);
+        float3 emission = UnpackRGBE(materials_[0].emission);
 
         if (emission.x + emission.y + emission.z > 0.0f) {
             // The triangle is emissive

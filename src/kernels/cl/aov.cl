@@ -61,6 +61,7 @@ __kernel void GenerateAOV
     __global float3* normal_buffer,
     __global float2* velocity_buffer
 ) {
+
     uint ray_idx = get_global_id(0);
     uint num_rays = ray_counter[0];
 
@@ -104,4 +105,6 @@ __kernel void GenerateAOV
     depth_buffer[pixel_idx] = length(ray.origin.xyz - position);
     normal_buffer[pixel_idx] = normal;
     velocity_buffer[pixel_idx] = ProjectScreen(position, camera) - ProjectScreen(position, prev_camera);
+
+    
 }

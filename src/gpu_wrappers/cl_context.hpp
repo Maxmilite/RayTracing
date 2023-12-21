@@ -53,11 +53,11 @@ public:
     const cl::Context& GetContext() const { return context_; }
     std::vector<cl::Device> const& GetDevices() const { return devices_; }
     void ReloadKernels();
+    cl::Context context_;
 
 private:
     cl::Platform platform_;
     std::vector<cl::Device> devices_;
-    cl::Context context_;
     cl::CommandQueue queue_;
     std::vector<std::weak_ptr<CLKernel>> kernels_;
     std::string kernels_path_;

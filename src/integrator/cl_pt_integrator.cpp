@@ -499,7 +499,11 @@ void CLPathTraceIntegrator::IntersectRays(std::uint32_t bounce) {
     kernel.SetArgument(6, records_buffer_);
 
     ///@TODO: use indirect dispatch
+    //cl_context_.Finish();
+    //std::cerr << "trace bvh Start" << std::endl;
     cl_context_.ExecuteKernel(kernel, max_num_rays);
+    //cl_context_.Finish();
+    //std::cerr << "trace bvh End" << std::endl;
 
     //acc_structure_.IntersectRays(rays_buffer_[incoming_idx], ray_counter_buffer_[incoming_idx],
     //    max_num_rays, hits_buffer_);
@@ -606,14 +610,25 @@ void CLPathTraceIntegrator::ShadeSurfaceHits(std::uint32_t bounce) {
     hit_surface_kernel_->SetArgument(args::HitSurface::kRecordsBuffer, records_buffer_);
 
     //std::cerr << sizeof(HitRecord) << std::endl;
-
+    
+    //cl_context_.Finish();
+    //std::cerr << "Hit Surface Start" << std::endl;
     cl_context_.ExecuteKernel(*hit_surface_kernel_, max_num_rays);
+    //cl_context_.Finish();
+    //std::cerr << "Hit Surface End" << std::endl;
 }
 
 void CLPathTraceIntegrator::AccumulateDirectSamples() {
     std::uint32_t max_num_rays = width_ * height_;
     int status = 0;
+    //cl_context_.Finish();
+    //std::cerr << "acc Start" << std::endl;
     cl_context_.ExecuteKernel(*accumulate_direct_samples_kernel_, max_num_rays);
+    //cl_context_.Finish();
+    //std::cerr << "acc End" << std::endl;
+   /* cl_int x = 0;
+    cl_context_.GetDevices()[0].getInfo(CL_CONTEXT_NUM_DEVICES, &x);
+    std::cerr << x << std::endl;*/
 }
 
 void CLPathTraceIntegrator::ClearOutgoingRayCounter(std::uint32_t bounce) {
@@ -641,6 +656,7 @@ void CLPathTraceIntegrator::CopyHistoryBuffers() {
 void CLPathTraceIntegrator::ResolveRadiance() {
     // Copy radiance to the interop image
     cl_context_.AcquireGLObject((*output_image_)());
+    //std::cerr << "stage1 finished" << std::endl;
     cl_context_.ExecuteKernel(*resolve_kernel_, width_ * height_);
     cl_context_.Finish();
     cl_context_.ReleaseGLObject((*output_image_)());

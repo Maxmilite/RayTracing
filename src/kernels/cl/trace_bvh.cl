@@ -157,7 +157,7 @@ __kernel void TraceBvh
     int nodesToVisit[64];
 
 
-    for (int i = 0; i < 30; ++i) records[ray_idx].hits[i].primitive_id = 0;
+    for (int i = 0; i < 31; ++i) records[ray_idx].hits[i].primitive_id = 0;
     records[ray_idx].num = 0;
 
     while (true) {
@@ -198,6 +198,8 @@ __kernel void TraceBvh
                             records[ray_idx].hits[records[ray_idx].num] = hit;
                             records[ray_idx].num++;
                         }
+
+                        if (records[ray_idx].num > 30) goto endtrace;
                     }
                 }
 
@@ -245,5 +247,6 @@ endtrace:
         hit.primitive_id = INVALID_ID;
         hits[ray_idx] = hit;
     }
+
 
 }

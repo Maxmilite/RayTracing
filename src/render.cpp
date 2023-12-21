@@ -183,7 +183,11 @@ void Render::DrawGUI() {
     ImGui::End();
 }
 
+unsigned __sample_count;
+
 void Render::RenderFrame() {
+
+
     FrameBegin();
 
     glClearColor(0.0f, 0.5f, 1.0f, 1.0f);
@@ -203,8 +207,10 @@ void Render::RenderFrame() {
 
     if (need_to_reset) {
         integrator_->RequestReset();
+        __sample_count = 0;
     }
 
+    if (++__sample_count < 100)
     integrator_->Integrate();
     framebuffer_->Present();
 
