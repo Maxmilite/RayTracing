@@ -31,8 +31,8 @@ void Integrator::Integrate() {
         request_reset_ = false;
     }
 
-    GenerateRays();
     //std::cerr << "Raygen" << " works" << std::endl;
+    GenerateRays();
 
     for (std::uint32_t bounce = 0; bounce <= max_bounces_; ++bounce) {
         IntersectRays(bounce);

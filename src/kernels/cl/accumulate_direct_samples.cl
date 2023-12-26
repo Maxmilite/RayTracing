@@ -50,6 +50,8 @@ __kernel void AccumulateDirectSamples
 
     if (shadow_hit == INVALID_ID) {
         {
+            if (direct_light_samples[ray_idx].x > 1.0f) direct_light_samples[ray_idx].x = 1.0f;
+            if (direct_light_samples[ray_idx].x < 0.0f) direct_light_samples[ray_idx].x = 0.01f;
             result_radiance[pixel_idx].xyz += direct_light_samples[ray_idx];
         }
     }

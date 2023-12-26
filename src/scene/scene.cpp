@@ -279,8 +279,6 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
         }
         };
 
-    const float movement = 1;
-
     std::map<std::pair<float3, float3>, std::pair<int, int>> umap;
 
     auto handle_edge = [&](Vertex v1, Vertex v2, std::uint32_t face) {
@@ -298,8 +296,8 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
     };
 
     RTMatrix transform;
-    //transform.rotation(transform.Axis::Z, acos(-1) / 12 * 22);
-    transform.translation(float3(1.0f, 1.0f, 1.0f));
+    transform.rotation(transform.Axis::Z, acos(-1) / 12 * 2);
+    transform.translation(float3(0.2f, 0.2f, 1.0f));
 
     for (auto const& shape : shapes) {
         auto const& indices = shape.mesh.indices;

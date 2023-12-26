@@ -41,7 +41,7 @@ float getU(Hit hit, const __global Triangle* triangles, uint pixel_idx) {
     float tan1 = ((length(v0i - x) * length(v0j - x)) - dot(v0i - x, v0j - x)) / length(cross(v0i - x, v0j - x));
     float tan2 = ((length(v0j - x) * length(v1j - x)) - dot(v0j - x, v1j - x)) / length(cross(v0j - x, v1j - x));
     float tan3 = ((length(v1j - x) * length(v1i - x)) - dot(v1j - x, v1i - x)) / length(cross(v1j - x, v1i - x));
-    float tan4 = ((length(v1i - x) * length(v0j - x)) - dot(v1i - x, v0j - x)) / length(cross(v1i - x, v0j - x));
+    float tan4 = ((length(v1i - x) * length(v0i - x)) - dot(v1i - x, v0i - x)) / length(cross(v1i - x, v0i - x));
     float w0i = (tan1 + tan4) / length(v0i - x);
     float w0j = (tan1 + tan2) / length(v0j - x);
     float w1j = (tan2 + tan3) / length(v1j - x);
@@ -188,7 +188,7 @@ __kernel void HitSurface
         //if (pixel_idx == 0) {
         //    printf("Record Count: %d\n", record.num);
         //    for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
-        //        printf("Hit #%d: %d -> %d at %.2f\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_idrecord.hits[i].time);
+        //        printf("Hit #%d: %d -> %d at (%.8f, &.8f, &.8f)\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_id, record.hits[i].time);
         //    }
         //}
         int flag = 0;
@@ -206,14 +206,16 @@ __kernel void HitSurface
             //    }
             //}
         }
+
         for (int i = 0, limit = min(30u, record.num); i + 1 < limit; ++i) {
             if (flag) {
                 flag = 0;
                 continue;
             }
-            if (record.hits[i + 1].exact_id == record.hits[i].exact_id) {
+            if (record.hits[i + 1].exact_id == record.hits[i].exact_id) { 
                 float radiance = record.hits[i + 1].time - record.hits[i].time;
                 direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
+                
                 //if (pixel_idx == 0) {
                 //    printf("Interval #%d: (%d, %d) causing [%f, %f], tot %f\n", ++cnt, i, i + 1, record.hits[i].timerecord.hits[i + 1].time, radiance);
                 //}
