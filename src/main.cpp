@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
         std::uint32_t window_width = 1600;
         std::uint32_t window_height = 900;
         bool use_opengl = false;
-        std::string scene_path = "assets/DoubleTriangle.obj";
+        std::string scene_path = "assets/Hammer.obj";
         float scene_scale = 1.0f;
         bool flip_yz = false;
 

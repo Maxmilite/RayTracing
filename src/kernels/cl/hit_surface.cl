@@ -67,6 +67,18 @@ bool compare(Hit a, Hit b) {
     return a.time < b.time;
 }
 
+struct Interval {
+    float l, r;
+    float padding[2];
+};
+
+bool compare2(struct Interval a, struct Interval b) {
+    if (a.l != b.l) {
+        return a.l < b.l;
+    }
+    return a.r < b.r;
+}
+
 void quickSort(Hit* a, int l, int r) {
     if (l < r) {
         int i = l, j = r;
@@ -87,6 +99,22 @@ void sort(__global HitRecord* record) {
     int n = min(30u, record->num);
     Hit* a = record->hits;
     quickSort(a, 0, n - 1);
+}
+
+void quickSort2(struct Interval* a, int l, int r) {
+    if (l < r) {
+        int i = l, j = r;
+        struct Interval x = a[l];
+        while (i < j) {
+            while (i < j && !compare2(a[j], x)) j--;
+            if (i < j) a[i++] = a[j];
+            while (i < j && compare2(a[i], x)) i++;
+            if (i < j) a[j--] = a[i];
+        }
+        a[i] = x;
+        quickSort2(a, l, i - 1);
+        quickSort2(a, i + 1, r);
+    }
 }
 
 float minfloat2(float2 x) {
@@ -140,7 +168,14 @@ __kernel void HitSurface
         return;
     }
     uint pixel_idx = incoming_pixel_indices[incoming_ray_idx];
+    
     uint sample_idx = sample_counter[0];
+
+    /*if (pixel_idx == 0) {
+        if (records_buffer[incoming_ray_idx].num & 1) {
+            printf("Error: %d\n", records_buffer[incoming_ray_idx].num);
+        }
+    }*/
 
     {
         
@@ -166,33 +201,10 @@ __kernel void HitSurface
     HitRecord record = records_buffer[incoming_ray_idx];
     direct_light_samples[shadow_ray_idx] = (float3) (0.0f, 0.0f, 0.0f);
     
-    //if (pixel_idx == 0) {
-
-        /*printf("Hit Size: %d\n", sizeof(Hit));
-        printf("HitRecord Size: %d\n", sizeof(HitRecord));
-       */ 
-        //if (record.num > 0 && record.num <= 2) {
-        //    const unsigned n = min(record.num, 31u);
-        //    for (unsigned i = 0; i < n; ++i) {
-        //        Triangle triangle = triangles[record.hits[i].exact_id];
-        //        printf("Hits at [%u] %u which prismtri = %d; at %f", i, record.hits[i].primitive_id, triangles[record.hits[i].primitive_id].prismTri, record.hits[i].time);
-        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v1.position.x, triangle.v1.position.y, triangle.v1.position.z);
-        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v2.position.x, triangle.v2.position.y, triangle.v2.position.z);
-        //        //printf("(%.2f, %.2f, %.2f) ", triangle.v3.position.x, triangle.v3.position.y, triangle.v3.position.z);
-        //        printf("\n");
-        //    }
-        //}
-    //}
 
     {
-        //if (pixel_idx == 0) {
-        //    printf("Record Count: %d\n", record.num);
-        //    for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
-        //        printf("Hit #%d: %d -> %d at (%.8f, &.8f, &.8f)\n", i + 1, record.hits[i].primitive_id, record.hits[i].exact_id, record.hits[i].time);
-        //    }
-        //}
         int flag = 0;
-        int cnt = 0;
+        //int cnt = 0;
         const float eps = 1e-3;
         for (int i = 0, limit = min(30u, record.num); i < limit; ++i) {
             if (record.hits[i].time < eps || record.hits[i].time + eps >= 1) {
@@ -200,35 +212,36 @@ __kernel void HitSurface
                     direct_light_samples[shadow_ray_idx] += (float3) (0.1f, 2.1f, 0.1f);
                 }
             }
-            //else {
-            //    if (fabs(minfloat2(record.hits[i].bc)) < eps || record.hits[i].bc.x + record.hits[i].bc.y + eps >= 1) {
-            //        direct_light_samples[shadow_ray_idx] += (float3) (1.1f, 1.1f, 0.1f);
-            //    }
-            //}
         }
 
-        for (int i = 0, limit = min(30u, record.num); i + 1 < limit; ++i) {
-            if (flag) {
-                flag = 0;
-                continue;
-            }
-            if (record.hits[i + 1].exact_id == record.hits[i].exact_id) { 
-                float radiance = record.hits[i + 1].time - record.hits[i].time;
-                direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
-                
-                //if (pixel_idx == 0) {
-                //    printf("Interval #%d: (%d, %d) causing [%f, %f], tot %f\n", ++cnt, i, i + 1, record.hits[i].timerecord.hits[i + 1].time, radiance);
-                //}
-                flag = 1;
-            }
-            else {
-                flag = 0;
-            }
+
+        struct Interval interval[30];
+        int cnt = 0;
+
+        for (int i = 0, limit = min(30u, record.num); i + 1 < limit; i += 2) {
+            interval[cnt].l = record.hits[i].time;
+            interval[cnt].r = record.hits[i + 1].time;
+            ++cnt;
+            //if (pixel_idx == 0) printf("Origin %d: %f %f\n", cnt, record.hits[i].time, record.hits[i + 1].time);
+            //if (pixel_idx == 0) printf("Origin int %d: %f %f\n", cnt, interval[cnt - 1].l, interval[cnt - 1].r);
         }
-        //if (pixel_idx == 0) {
-        //    printf("\n");
-        //}
+
+        if (cnt == 0) return;
+
+        float cur = 0;
+        quickSort2(interval, 0, cnt - 1);
+
+        for (int i = 0; i < cnt; ++i) {
+            //if (pixel_idx == 0) printf("Dist %d: %f %f\n", i, interval[i].l, interval[i].r);
+            if (cur > interval[i].r) continue;
+            float radiance = interval[i].r - max(interval[i].l, cur);
+            direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
+            cur = max(cur, interval[i].r);
+        }
+
     }
+
+    //delete[] interval;
 
 
     //if (get_global_id(0) == 0) {
