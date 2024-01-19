@@ -296,7 +296,7 @@ void Scene::Load(const char* filename, float scale, bool flip_yz) {
     };
 
     RTMatrix transform;
-    //transform.rotation(transform.Axis::Z, acos(-1) / 12 * 2);
+    transform.rotation(transform.Axis::Z, acos(-1) / 12 * 2);
     transform.translation(float3(0.2f, 0.2f, 1.0f));
 
     for (auto const& shape : shapes) {

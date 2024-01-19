@@ -102,6 +102,7 @@ void sort(__global HitRecord* record) {
 }
 
 void quickSort2(struct Interval* a, int l, int r) {
+    //if (l >= r) return;
     if (l < r) {
         int i = l, j = r;
         struct Interval x = a[l];
@@ -219,14 +220,21 @@ __kernel void HitSurface
         int cnt = 0;
 
         for (int i = 0, limit = min(30u, record.num); i + 1 < limit; i += 2) {
-            interval[cnt].l = record.hits[i].time;
-            interval[cnt].r = record.hits[i + 1].time;
-            ++cnt;
+            if (record.hits[i].exact_id == record.hits[i + 1].exact_id) {
+                interval[cnt].l = record.hits[i].time;
+                interval[cnt].r = record.hits[i + 1].time;
+                //float radiance = record.hits[i + 1].time - record.hits[i].time;
+                //direct_light_samples[shadow_ray_idx] += (float3) (1.0f * radiance, 0.1f * radiance, 0.1f * radiance);
+                ++cnt;
+            }
             //if (pixel_idx == 0) printf("Origin %d: %f %f\n", cnt, record.hits[i].time, record.hits[i + 1].time);
             //if (pixel_idx == 0) printf("Origin int %d: %f %f\n", cnt, interval[cnt - 1].l, interval[cnt - 1].r);
         }
 
-        if (cnt == 0) return;
+
+        //if (cnt <= 1) {
+        //    printf("%d\n", get_global_id(0));
+        //}
 
         float cur = 0;
         quickSort2(interval, 0, cnt - 1);
